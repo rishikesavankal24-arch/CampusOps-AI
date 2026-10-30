@@ -1,0 +1,88 @@
+# ===========================
+# CampusOps AI — .gitignore
+# ===========================
+
+# ----- Environment & Secrets -----
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.secret
+
+# ----- Node.js / Next.js -----
+node_modules/
+.next/
+out/
+build/
+dist/
+.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+package-lock.json.bak
+
+# ----- Python / FastAPI -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+venv/
+.venv/
+env/
+.virtualenv/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+*.whl
+
+# ----- Build & Compiled Output -----
+*.o
+*.so
+*.dll
+*.dylib
+*.class
+
+# ----- Logs -----
+logs/
+*.log
+
+# ----- Local Databases & Backups -----
+*.sqlite3
+*.db
+*.db-journal
+*.sql.bak
+*.dump
+
+# ----- IDE & Editor Temps -----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ----- OS Generated -----
+.DS_Store
+ehthumbs.db
+*.lnk
+
+# ----- Testing & Coverage -----
+coverage/
+.nyc_output/
+htmlcov/
+.coverage
+.pytest_cache/
+.tox/
+
+# ----- Misc -----
+*.bak
+*.tmp
+*.temp
+.cache/
+
