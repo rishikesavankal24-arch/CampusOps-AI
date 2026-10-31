@@ -318,14 +318,37 @@ function IncidentsWorkspaceContent() {
     }
   };
 
-  // Re-seed demo telemetry
+  // Re-seed demo telemetry and reset investigation state
   const handleResetDemo = async () => {
     try {
       setSeeding(true);
+      setError(null);
+      // 1. Re-seed incident & evidence
       const res = await fetch("/api/incidents", { method: "POST" });
       if (!res.ok) {
-        throw new Error("Reset failed.");
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || "Reset failed.");
       }
+
+      // 2. Explicitly call reset on the investigation orchestrator to return to fresh initial state
+      const invResetRes = await fetch(`/api/incidents/${DEMO_INCIDENT_ID}/investigation/reset`, {
+        method: "POST",
+      });
+      if (invResetRes.ok) {
+        const freshInv = await invResetRes.json();
+        setInvestigation(freshInv);
+      }
+
+      // 3. Refresh tracker & incident summary
+      const trackerRes = await fetch(`/api/incidents/${DEMO_INCIDENT_ID}/investigation/tracker`);
+      if (trackerRes.ok) {
+        setTracker(await trackerRes.json());
+      }
+      const incRes = await fetch(`/api/incidents/${DEMO_INCIDENT_ID}`);
+      if (incRes.ok) {
+        setIncident(await incRes.json());
+      }
+
       setSelectedIncidentId(DEMO_INCIDENT_ID);
       setRefreshCount((prev) => prev + 1);
     } catch (err) {

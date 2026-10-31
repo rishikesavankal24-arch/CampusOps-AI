@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle, Play, ShieldCheck } from "lucide-react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { PasswordResetModal } from "@/components/auth/PasswordResetModal";
@@ -95,6 +95,47 @@ function LoginForm() {
           </button>
         </div>
       )}
+
+      {/* 1-Click SRE Demo Login Card */}
+      <div className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl space-y-2 text-white">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-sky-400" />
+            <span className="text-xs font-bold text-slate-100 font-mono">TCS Hackathon Evaluator Access</span>
+          </div>
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800">
+            SRE ADMIN
+          </span>
+        </div>
+        <p className="text-[11px] text-slate-400">
+          Instant evaluator access with full incident investigation, diagnostics, and recovery authority.
+        </p>
+        <button
+          type="button"
+          onClick={async () => {
+            setEmail("admin@campusops.edu");
+            setPassword("AdminPass123!");
+            try {
+              setIsSubmitting(true);
+              await login("admin@campusops.edu", "AdminPass123!");
+              if (fromParam && fromParam.startsWith("/") && !fromParam.startsWith("//")) {
+                router.push(fromParam);
+              } else {
+                router.push("/incidents?tab=overview");
+              }
+            } catch (err) {
+              setErrorMessage(err instanceof Error ? err.message : "Quick login failed");
+            } finally {
+              setIsSubmitting(false);
+            }
+          }}
+          disabled={isSubmitting}
+          className="w-full py-2.5 px-3 rounded-lg bg-sky-600 hover:bg-sky-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-md transition cursor-pointer disabled:opacity-50"
+        >
+          <Play className="w-3.5 h-3.5 fill-current" />
+          <span>{isSubmitting ? "Authenticating SRE Session..." : "1-Click SRE Demo Login"}</span>
+        </button>
+      </div>
 
       {/* Google Single Sign-On Button */}
       <div className="space-y-2">

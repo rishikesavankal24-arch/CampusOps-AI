@@ -40,6 +40,7 @@ async def seed_demo(
 ) -> IncidentSummary:
     """Seed or update the canonical demo incident and return its summary."""
     incident = await incident_service.seed_demo_incident(db, current_user_id=current_user.id)
+    await investigation_orchestrator.reset_investigation(db, incident.id)
     summary = await incident_service.get_incident_summary(db, incident.id)
     if not summary:
         raise HTTPException(

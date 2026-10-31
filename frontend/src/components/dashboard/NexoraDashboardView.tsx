@@ -629,11 +629,14 @@ export default function NexoraDashboardView({
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Incident Resolved
                   </div>
                   <button
-                    onClick={() => handleAction(onTriggerDemo)}
+                    onClick={async () => {
+                      await handleAction(onTriggerDemo);
+                      onNavigateToTab("investigation");
+                    }}
                     disabled={runningAction}
-                    className="w-full py-2 px-3 rounded-lg bg-[#0b1329] hover:bg-[#172344] border border-[#1e2e54] text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow cursor-pointer disabled:opacity-50"
+                    className="w-full py-2 px-3 rounded-lg bg-sky-600 hover:bg-sky-500 text-slate-950 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow cursor-pointer disabled:opacity-50"
                   >
-                    <Play className="w-3.5 h-3.5 text-sky-400" /> Trigger New Demo Incident
+                    <Play className="w-3.5 h-3.5 text-slate-950" /> Trigger New Demo Incident
                   </button>
                 </div>
               ) : isAwaitingApproval ? (

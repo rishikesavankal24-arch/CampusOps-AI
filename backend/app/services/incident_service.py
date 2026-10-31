@@ -343,6 +343,9 @@ async def seed_demo_incident(db: AsyncSession, current_user_id: uuid.UUID | None
         incident.title = "Elevated HTTP 504 Gateway Timeouts & Auth Failure Cascade on Student Portal"
         incident.status = IncidentStatus.INVESTIGATING
         incident.priority = IncidentPriority.CRITICAL
+        incident.ai_root_cause = None
+        incident.ai_resolution = None
+        incident.resolved_at = None
 
     # 2. Upsert the 11 Evidence items
     now_utc = datetime.now(timezone.utc)
