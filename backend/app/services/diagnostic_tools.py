@@ -11,63 +11,128 @@ import uuid
 
 from app.schemas.investigation import DiagnosticToolCall
 
+SCENARIO_1_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
+SCENARIO_2_ID = uuid.UUID("22222222-2222-3333-4444-555555555555")
+SCENARIO_3_ID = uuid.UUID("33333333-2222-3333-4444-555555555555")
+
 
 def run_network_connectivity_diagnostic(
     target_service: str = "portal-gateway",
     round_num: int = 1,
+    incident_id: uuid.UUID | None = None,
 ) -> DiagnosticToolCall:
     """Primary Network Diagnostic: checks L3/L4 connectivity, DNS, DHCP, gateway, and switch health."""
-    simulated_output = {
-        "target": target_service,
-        "icmp_ping": {
-            "packets_transmitted": 10,
-            "packets_received": 10,
-            "packet_loss_pct": 0.0,
-            "avg_latency_ms": 1.24,
-            "status": "PASS",
-        },
-        "dns_resolution": {
-            "query": "portal.campusops.edu",
-            "record_type": "A",
-            "resolved_ip": "10.244.0.15",
-            "lookup_duration_ms": 3.8,
-            "authoritative_server": "10.0.0.2 (campus-dns-core)",
-            "status": "PASS",
-        },
-        "dhcp_subnets": {
-            "client_pool": "10.244.0.0/16",
-            "active_leases": 1420,
-            "pool_available_pct": 74.2,
-            "status": "PASS",
-        },
-        "gateway_reachability": {
-            "port": 443,
-            "protocol": "TCP/TLS 1.3",
-            "handshake_ms": 4.1,
-            "tls_certificate": "Valid (*.campusops.edu, expires in 280 days)",
-            "status": "PASS",
-        },
-        "switch_access_point_health": {
-            "core_switch": "switch-core-bldg-a",
-            "port": "TenGigabitEthernet 1/0/24",
-            "link_speed": "10Gbps Full-Duplex",
-            "crc_errors": 0,
-            "status": "PASS",
-        },
-        "downstream_hop_check": {
-            "hop_1_gateway_to_auth": {
-                "l4_tcp_handshake": "ESTABLISHED (0.8ms)",
-                "l7_http_response": "HTTP 504 Gateway Timeout (upstream response timed out after 10000ms)",
-            }
-        },
-        "simulated": True,
-    }
+    if incident_id == SCENARIO_2_ID:
+        simulated_output = {
+            "target": "ap-lib-floor2",
+            "icmp_ping": {
+                "packets_transmitted": 10,
+                "packets_received": 7,
+                "packet_loss_pct": 24.8,
+                "avg_latency_ms": 184.2,
+                "status": "FAIL",
+            },
+            "dns_resolution": {
+                "query": "portal.campusops.edu",
+                "record_type": "A",
+                "resolved_ip": None,
+                "lookup_duration_ms": 5000,
+                "authoritative_server": "10.0.0.2 (campus-dns-core)",
+                "status": "TIMEOUT",
+            },
+            "dhcp_subnets": {
+                "client_pool": "10.0.4.0/24 (Campus Wireless VLAN 104)",
+                "total_leases": 254,
+                "active_leases": 254,
+                "available_leases": 0,
+                "pool_available_pct": 0.0,
+                "status": "EXHAUSTED",
+            },
+            "gateway_reachability": {
+                "port": 443,
+                "protocol": "TCP/TLS 1.3",
+                "handshake_ms": 182.4,
+                "status": "DEGRADED (Frequent Syn Retransmits)",
+            },
+            "switch_access_point_health": {
+                "access_point": "ap-lib-floor2",
+                "location": "Library Floor 2",
+                "active_clients": 128,
+                "max_rated_clients": 100,
+                "channel_utilization_pct": 94.2,
+                "snr_db": 12.4,
+                "status": "CRITICAL_RF_SATURATION",
+            },
+            "downstream_hop_check": {
+                "hop_1_client_to_ap": {
+                    "association_latency_ms": 840,
+                    "frame_retry_rate_pct": 38.4,
+                    "state": "DEGRADED",
+                },
+                "hop_2_ap_to_dhcp": {
+                    "dhcp_discover_dropped": 42,
+                    "state": "NO_LEASES_AVAILABLE",
+                },
+            },
+            "simulated": True,
+        }
+        insight = (
+            "PHYSICAL NETWORK & DHCP EXHAUSTION DETECTED: Access point ap-lib-floor2 is experiencing 24.8% packet loss "
+            "and 94.2% RF channel saturation with 128 client associations. DHCP scope 10.0.4.0/24 is 100% exhausted "
+            "(0 available leases), rejecting mobile student connections and causing APIPA fallback."
+        )
+    else:
+        simulated_output = {
+            "target": target_service,
+            "icmp_ping": {
+                "packets_transmitted": 10,
+                "packets_received": 10,
+                "packet_loss_pct": 0.0,
+                "avg_latency_ms": 1.24,
+                "status": "PASS",
+            },
+            "dns_resolution": {
+                "query": "portal.campusops.edu",
+                "record_type": "A",
+                "resolved_ip": "10.244.0.15",
+                "lookup_duration_ms": 3.8,
+                "authoritative_server": "10.0.0.2 (campus-dns-core)",
+                "status": "PASS",
+            },
+            "dhcp_subnets": {
+                "client_pool": "10.244.0.0/16",
+                "active_leases": 1420,
+                "pool_available_pct": 74.2,
+                "status": "PASS",
+            },
+            "gateway_reachability": {
+                "port": 443,
+                "protocol": "TCP/TLS 1.3",
+                "handshake_ms": 4.1,
+                "tls_certificate": "Valid (*.campusops.edu, expires in 280 days)",
+                "status": "PASS",
+            },
+            "switch_access_point_health": {
+                "core_switch": "switch-core-bldg-a",
+                "port": "TenGigabitEthernet 1/0/24",
+                "link_speed": "10Gbps Full-Duplex",
+                "crc_errors": 0,
+                "status": "PASS",
+            },
+            "downstream_hop_check": {
+                "hop_1_gateway_to_auth": {
+                    "l4_tcp_handshake": "ESTABLISHED (0.8ms)",
+                    "l7_http_response": "HTTP 504 Gateway Timeout (upstream response timed out after 10000ms)",
+                }
+            },
+            "simulated": True,
+        }
 
-    insight = (
-        "Network Layer Verification: Campus L3/L4 switching, DNS resolution, DHCP pools, and gateway "
-        "TCP connectivity are 100% OPERATIONAL (0% packet loss, 1.2ms latency). The failure is not a "
-        "campus network outage, but an application-level upstream timeout originating inside auth-service."
-    )
+        insight = (
+            "Network Layer Verification: Campus L3/L4 switching, DNS resolution, DHCP pools, and gateway "
+            "TCP connectivity are 100% OPERATIONAL (0% packet loss, 1.2ms latency). The failure is not a "
+            "campus network outage, but an application-level upstream timeout originating inside auth-service."
+        )
 
     return DiagnosticToolCall(
         call_id=f"tool-net-{uuid.uuid4().hex[:8]}",
@@ -86,35 +151,66 @@ def run_network_connectivity_diagnostic(
 def run_application_diagnostics(
     target_service: str = "auth-service",
     round_num: int = 2,
+    incident_id: uuid.UUID | None = None,
 ) -> DiagnosticToolCall:
     """Application Diagnostics: checks error logs, exception stack traces, and request timings."""
-    simulated_output = {
-        "target": target_service,
-        "runtime": "Python 3.13 / FastAPI",
-        "active_pods": 3,
-        "error_log_analysis": {
-            "dominant_exception": "sqlalchemy.exc.TimeoutError",
-            "error_rate_pct": 84.2,
-            "sample_message": "QueuePool limit of size 15 overflow 0 reached, connection timed out, timeout 10.00",
-            "stack_trace_top": "app/database.py:35 in get_db -> pool.py:170 in _do_get",
-        },
-        "distributed_trace_sample": {
-            "trace_id": "trace-8891bf40aa91",
-            "total_latency_ms": 10214,
-            "spans": [
-                {"name": "gateway:ingress", "duration_ms": 2},
-                {"name": "auth:argon2_verify", "duration_ms": 380},
-                {"name": "auth:db_pool_acquisition", "duration_ms": 9820, "status": "TIMEOUT"},
-            ],
-        },
-        "simulated": True,
-    }
+    if incident_id == SCENARIO_3_ID:
+        simulated_output = {
+            "target": target_service,
+            "runtime": "Python 3.13 / FastAPI (auth-service:v2.4.1 canary)",
+            "active_pods": 3,
+            "cpu_utilization_pct": 98.4,
+            "cfs_throttled_periods_pct": 42.1,
+            "error_log_analysis": {
+                "dominant_exception": "asyncio.exceptions.TimeoutError",
+                "error_rate_pct": 41.2,
+                "sample_message": "Upstream timeout waiting for argon2_verify CPU worker execution (threshold: 8000ms)",
+                "stack_trace_top": "app/auth/security.py:42 in verify_password -> argon2.low_level.verify_secret",
+            },
+            "distributed_trace_sample": {
+                "trace_id": "trace-argon2-thrash-0915",
+                "total_latency_ms": 10120,
+                "spans": [
+                    {"name": "gateway:ingress", "duration_ms": 3},
+                    {"name": "auth:argon2_verify", "duration_ms": 8240, "status": "THROTTLED"},
+                    {"name": "auth:db_pool_acquisition", "duration_ms": 14, "status": "OK"},
+                ],
+            },
+            "simulated": True,
+        }
+        insight = (
+            "Application Diagnostic: auth-service pod CPU is pegged at 98.4% with 42.1% cgroup CFS throttling. "
+            "Trace analysis proves argon2_verify is taking 8,240ms per verification (baseline: 320ms) due to the 64MB "
+            "memory cost increase, exhausting worker threads and tripping gateway timeouts."
+        )
+    else:
+        simulated_output = {
+            "target": target_service,
+            "runtime": "Python 3.13 / FastAPI",
+            "active_pods": 3,
+            "error_log_analysis": {
+                "dominant_exception": "sqlalchemy.exc.TimeoutError",
+                "error_rate_pct": 84.2,
+                "sample_message": "QueuePool limit of size 15 overflow 0 reached, connection timed out, timeout 10.00",
+                "stack_trace_top": "app/database.py:35 in get_db -> pool.py:170 in _do_get",
+            },
+            "distributed_trace_sample": {
+                "trace_id": "trace-8891bf40aa91",
+                "total_latency_ms": 10214,
+                "spans": [
+                    {"name": "gateway:ingress", "duration_ms": 2},
+                    {"name": "auth:argon2_verify", "duration_ms": 380},
+                    {"name": "auth:db_pool_acquisition", "duration_ms": 9820, "status": "TIMEOUT"},
+                ],
+            },
+            "simulated": True,
+        }
 
-    insight = (
-        "Application Diagnostic: auth-service is spending 9,820ms blocked waiting to acquire an idle "
-        "database connection from the async QueuePool. 84.2% of login attempts hit the 10.0s acquisition "
-        "timeout and trigger HTTP 504 at the gateway."
-    )
+        insight = (
+            "Application Diagnostic: auth-service is spending 9,820ms blocked waiting to acquire an idle "
+            "database connection from the async QueuePool. 84.2% of login attempts hit the 10.0s acquisition "
+            "timeout and trigger HTTP 504 at the gateway."
+        )
 
     return DiagnosticToolCall(
         call_id=f"tool-app-{uuid.uuid4().hex[:8]}",
@@ -133,6 +229,7 @@ def run_application_diagnostics(
 def run_database_diagnostics(
     target_service: str = "campusops-db",
     round_num: int = 2,
+    incident_id: uuid.UUID | None = None,
 ) -> DiagnosticToolCall:
     """Database Diagnostics: checks connection pool saturation, idle-in-tx locks, and host resources."""
     simulated_output = {
@@ -187,39 +284,73 @@ def run_database_diagnostics(
 def run_deployment_config_diagnostics(
     target_service: str = "auth-service",
     round_num: int = 3,
+    incident_id: uuid.UUID | None = None,
 ) -> DiagnosticToolCall:
     """Deployment/Config Diagnostics: checks GitOps commit history and config diffs."""
-    simulated_output = {
-        "target": target_service,
-        "gitops_repo": "campus-ops/helm-deployments",
-        "recent_commits": [
-            {
-                "commit": "a8f912c",
-                "author": "infra-bot@campusops.internal",
-                "message": "perf: lower idle db pool to 15 to save memory",
-                "diff": "- database.pool_size: 50\n+ database.pool_size: 15",
-                "deployed_at": "2026-10-31T09:00:00Z",
+    if incident_id == SCENARIO_3_ID:
+        simulated_output = {
+            "target": target_service,
+            "gitops_repo": "campus-ops/helm-deployments",
+            "recent_commits": [
+                {
+                    "commit": "d981a2f",
+                    "author": "security-team@campusops.internal",
+                    "message": "security: strengthen Argon2id hash memory cost to 64MB",
+                    "diff": "- security.argon2.memory_cost: 16384\n+ security.argon2.memory_cost: 65536",
+                    "deployed_at": "2026-10-31T09:04:00Z",
+                },
+                {
+                    "commit": "a149c81",
+                    "author": "release-bot@campusops.internal",
+                    "message": "promote auth-service:v2.4.1 canary to 10% traffic",
+                    "diff": "+ canary.traffic_weight: 10",
+                    "deployed_at": "2026-10-31T09:02:00Z",
+                },
+            ],
+            "config_verification": {
+                "current_argon2_memory_cost_kb": 65536,
+                "historical_baseline_kb": 16384,
+                "current_cpu_utilization_pct": 98.4,
             },
-            {
-                "commit": "c4118be",
-                "author": "dev-team@campusops.internal",
-                "message": "release auth-service v2.4.1 (Argon2id params)",
-                "deployed_at": "2026-10-31T09:05:00Z",
+            "simulated": True,
+        }
+        insight = (
+            "Configuration Audit: Root cause identified in GitOps commit d981a2f (canary v2.4.1). "
+            "Argon2id memory_cost was quadrupled from 16MB to 64MB per hash. Under concurrent student login load, "
+            "this exhausted CPU worker threads and triggered 98.4% CPU saturation with 42.1% CFS throttling."
+        )
+    else:
+        simulated_output = {
+            "target": target_service,
+            "gitops_repo": "campus-ops/helm-deployments",
+            "recent_commits": [
+                {
+                    "commit": "a8f912c",
+                    "author": "infra-bot@campusops.internal",
+                    "message": "perf: lower idle db pool to 15 to save memory",
+                    "diff": "- database.pool_size: 50\n+ database.pool_size: 15",
+                    "deployed_at": "2026-10-31T09:00:00Z",
+                },
+                {
+                    "commit": "c4118be",
+                    "author": "dev-team@campusops.internal",
+                    "message": "release auth-service v2.4.1 (Argon2id params)",
+                    "deployed_at": "2026-10-31T09:05:00Z",
+                },
+            ],
+            "config_verification": {
+                "current_deployed_pool_size": 15,
+                "historical_baseline_pool_size": 50,
+                "delta": -35,
             },
-        ],
-        "config_verification": {
-            "current_deployed_pool_size": 15,
-            "historical_baseline_pool_size": 50,
-            "delta": -35,
-        },
-        "simulated": True,
-    }
+            "simulated": True,
+        }
 
-    insight = (
-        "Configuration Audit: Root cause identified in GitOps commit a8f912c (merged 25 min before incident). "
-        "The database pool limit was reduced from 50 to 15. Coupled with v2.4.1's Argon2 memory cost increase "
-        "and peak course registration traffic, this triggered total connection pool starvation."
-    )
+        insight = (
+            "Configuration Audit: Root cause identified in GitOps commit a8f912c (merged 25 min before incident). "
+            "The database pool limit was reduced from 50 to 15. Coupled with v2.4.1's Argon2 memory cost increase "
+            "and peak course registration traffic, this triggered total connection pool starvation."
+        )
 
     return DiagnosticToolCall(
         call_id=f"tool-cfg-{uuid.uuid4().hex[:8]}",

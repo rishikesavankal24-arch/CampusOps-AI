@@ -32,14 +32,17 @@ router = APIRouter(prefix="/api/v1/incidents", tags=["Incidents & Investigation"
     response_model=IncidentSummary,
     status_code=status.HTTP_201_CREATED,
     summary="Seed or reset canonical demo incident",
-    description="Seeds the deterministic 11-source incident telemetry dataset for demonstration.",
+    description="Seeds the deterministic multi-source incident telemetry dataset for demonstration.",
 )
 async def seed_demo(
+    scenario_id: uuid.UUID | None = Query(default=None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> IncidentSummary:
     """Seed or update the canonical demo incident and return its summary."""
-    incident = await incident_service.seed_demo_incident(db, current_user_id=current_user.id)
+    incident = await incident_service.seed_demo_incident(
+        db, current_user_id=current_user.id, target_scenario_id=scenario_id
+    )
     await investigation_orchestrator.reset_investigation(db, incident.id)
     summary = await incident_service.get_incident_summary(db, incident.id)
     if not summary:

@@ -43,7 +43,7 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get("campusops_session")?.value;
@@ -55,8 +55,23 @@ export async function POST() {
       );
     }
 
-    // Default to seeding demo incident
-    const response = await fetch(`${BACKEND_URL}/api/v1/incidents/seed-demo`, {
+    let scenarioId: string | null = null;
+    try {
+      const url = new URL(req.url);
+      scenarioId = url.searchParams.get("scenario_id");
+      if (!scenarioId) {
+        const body = await req.json().catch(() => null);
+        scenarioId = body?.scenario_id || null;
+      }
+    } catch {
+      // ignore parsing failure, fallback to default scenario
+    }
+
+    const endpoint = scenarioId
+      ? `${BACKEND_URL}/api/v1/incidents/seed-demo?scenario_id=${encodeURIComponent(scenarioId)}`
+      : `${BACKEND_URL}/api/v1/incidents/seed-demo`;
+
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

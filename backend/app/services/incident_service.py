@@ -25,8 +25,11 @@ from app.schemas.incident import (
     ServiceNode,
 )
 
-# Deterministic Demo Incident ID
-DEMO_INCIDENT_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
+# Deterministic Multi-Scenario Demo Incident IDs
+SCENARIO_1_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
+SCENARIO_2_ID = uuid.UUID("22222222-2222-3333-4444-555555555555")
+SCENARIO_3_ID = uuid.UUID("33333333-2222-3333-4444-555555555555")
+DEMO_INCIDENT_ID = SCENARIO_1_ID
 
 # Canonical 11-item evidence dataset for Phase 1 Demo
 DEMO_EVIDENCE_DEFINITIONS = [
@@ -300,9 +303,251 @@ DEMO_EVIDENCE_DEFINITIONS = [
     },
 ]
 
+# Scenario 2 Evidence: Campus Wi-Fi & DHCP Pool Exhaustion (Network Hardware)
+SCENARIO_2_EVIDENCE_DEFINITIONS = [
+    {
+        "id": uuid.UUID("b2222222-0000-0000-0000-000000000001"),
+        "evidence_type": EvidenceType.LOG,
+        "source_type": "metric",
+        "service_name": "ap-lib-floor2",
+        "event_time": datetime(2026, 10, 31, 9, 8, 0, tzinfo=timezone.utc),
+        "severity": "warning",
+        "title": "Access Point RF Channel Saturation & Client Association Spike",
+        "content": (
+            "Access point ap-lib-floor2 (Library 2nd Floor) reached 128 active client associations "
+            "(rated limit: 100). 5GHz channel 36 utilization spiked to 94.2% with severe RF interference."
+        ),
+        "details": {
+            "device": "ap-lib-floor2",
+            "active_clients": 128,
+            "max_clients": 100,
+            "channel_utilization_pct": 94.2,
+            "rf_band": "5GHz (Channel 36)",
+            "snr_db": 12.4,
+        },
+        "correlation_id": "wifi-rf-sat-0908",
+        "related_service": "student-portal-ui",
+        "source_metadata": {"collector": "cisco-catalyst-center", "location": "Library Floor 2"},
+    },
+    {
+        "id": uuid.UUID("b2222222-0000-0000-0000-000000000002"),
+        "evidence_type": EvidenceType.CONFIG,
+        "source_type": "alert",
+        "service_name": "gw-border-01",
+        "event_time": datetime(2026, 10, 31, 9, 11, 0, tzinfo=timezone.utc),
+        "severity": "critical",
+        "title": "DHCP Scope Exhaustion on Subnet 10.0.4.0/24 (0 Available Leases)",
+        "content": (
+            "Core DHCP server pool for wireless subnet 10.0.4.0/24 reached 100% capacity "
+            "(254/254 active leases). DHCPDISCOVER requests from 42 mobile clients rejected."
+        ),
+        "details": {
+            "subnet": "10.0.4.0/24",
+            "total_addresses": 254,
+            "allocated_leases": 254,
+            "available_leases": 0,
+            "exhaustion_ratio": 1.0,
+            "dhcp_server": "10.0.0.53",
+        },
+        "correlation_id": "dhcp-scope-exhaust-0911",
+        "related_service": "portal-gateway",
+        "source_metadata": {"collector": "infoblox-ipam-syslog", "severity": "ALERT"},
+    },
+    {
+        "id": uuid.UUID("b2222222-0000-0000-0000-000000000003"),
+        "evidence_type": EvidenceType.LOG,
+        "source_type": "application_log",
+        "service_name": "student-portal-ui",
+        "event_time": datetime(2026, 10, 31, 9, 14, 0, tzinfo=timezone.utc),
+        "severity": "error",
+        "title": "Client Connection Timed Out: Unable to Reach Gateway",
+        "content": (
+            "Student portal web client logs report unresolvable host 'portal.campusops.edu' "
+            "and socket timeout. Operating system reports no IPv4 default route assigned."
+        ),
+        "details": {
+            "error_code": "ERR_NAME_NOT_RESOLVED",
+            "network_state": "DHCP_FAILED",
+            "affected_client_os": "macOS / iOS / Android",
+            "client_ip": "169.254.12.88 (APIPA Self-Assigned)",
+        },
+        "correlation_id": "client-apipa-timeout-0914",
+        "related_service": "portal-gateway",
+        "source_metadata": {"collector": "sentry-browser-rum", "environment": "production"},
+    },
+    {
+        "id": uuid.UUID("b2222222-0000-0000-0000-000000000004"),
+        "evidence_type": EvidenceType.LOG,
+        "source_type": "metric",
+        "service_name": "switch-core-bldg-a",
+        "event_time": datetime(2026, 10, 31, 9, 16, 0, tzinfo=timezone.utc),
+        "severity": "warning",
+        "title": "Access Point Uplink Port Packet Drops Surge to 24.8%",
+        "content": (
+            "Switch port GigabitEthernet1/0/18 (connecting ap-lib-floor2) reports 24.8% ingress packet "
+            "drop rate due to buffer overruns during peak registration login traffic."
+        ),
+        "details": {
+            "switch": "switch-core-bldg-a",
+            "port": "GigabitEthernet1/0/18",
+            "rx_dropped_pct": 24.8,
+            "tx_packets_sec": 1420,
+            "queue_drops": 4820,
+        },
+        "correlation_id": "switch-port-drops-0916",
+        "related_service": "portal-gateway",
+        "source_metadata": {"collector": "snmp-collector", "host": "switch-core-bldg-a"},
+    },
+    {
+        "id": uuid.UUID("b2222222-0000-0000-0000-000000000005"),
+        "evidence_type": EvidenceType.USER_REPORT,
+        "source_type": "support_ticket",
+        "service_name": "student-portal-ui",
+        "event_time": datetime(2026, 10, 31, 9, 18, 0, tzinfo=timezone.utc),
+        "severity": "critical",
+        "title": "Helpdesk Ticket #IT-8890: 'Wi-Fi drops in Library; Cannot Submit Course Registration'",
+        "content": (
+            "Urgent student ticket: 'Wi-Fi in Library 2nd floor connects but says No Internet Connection. "
+            "Laptop gets IP 169.254.x.x. Course drop/add window closes in 30 minutes.'"
+        ),
+        "details": {
+            "ticket_id": "IT-8890",
+            "submitter": "k.patel@univ.edu",
+            "location": "Library Floor 2 Quiet Study Room",
+            "urgency": "High",
+        },
+        "correlation_id": "ticket-IT-8890",
+        "related_service": "student-portal-ui",
+        "source_metadata": {"collector": "zendesk-sync", "priority": "Urgent"},
+    },
+]
 
-async def seed_demo_incident(db: AsyncSession, current_user_id: uuid.UUID | None = None) -> Incident:
-    """Seed or update the canonical deterministic demo incident and all 11 evidence items."""
+# Scenario 3 Evidence: Auth-Service CPU Starvation via Argon2id Memory Surge (Canary Rollout)
+SCENARIO_3_EVIDENCE_DEFINITIONS = [
+    {
+        "id": uuid.UUID("c3333333-0000-0000-0000-000000000001"),
+        "evidence_type": EvidenceType.CONFIG,
+        "source_type": "deployment",
+        "service_name": "auth-service",
+        "event_time": datetime(2026, 10, 31, 9, 2, 0, tzinfo=timezone.utc),
+        "severity": "info",
+        "title": "Canary Rollout auth-service:v2.4.1 Deployed to Cluster",
+        "content": (
+            "ArgoCD synchronized rollout auth-service:v2.4.1 to cluster prod-us-east. "
+            "Changelog introduces security hardening upgrade to Argon2id key derivation parameters."
+        ),
+        "details": {
+            "image": "campusops/auth-service:v2.4.1",
+            "commit": "d981a2f",
+            "author": "security-team@campusops.internal",
+            "namespace": "campus-prod",
+            "replicas": 3,
+        },
+        "correlation_id": "deploy-canary-v241",
+        "related_service": "portal-gateway",
+        "source_metadata": {"collector": "argocd-audit", "cluster": "campus-prod-us-east"},
+    },
+    {
+        "id": uuid.UUID("c3333333-0000-0000-0000-000000000002"),
+        "evidence_type": EvidenceType.CONFIG,
+        "source_type": "configuration",
+        "service_name": "auth-service",
+        "event_time": datetime(2026, 10, 31, 9, 4, 0, tzinfo=timezone.utc),
+        "severity": "warning",
+        "title": "Argon2id Memory Cost Parameter Increased to 65536 KB (64 MB)",
+        "content": (
+            "Application config parameter 'security.argon2.memory_cost' increased from 16384 (16MB) to 65536 (64MB) "
+            "per verification attempt. CPU cost parameter remained at 3 iterations."
+        ),
+        "details": {
+            "parameter": "security.argon2.memory_cost",
+            "old_value_kb": 16384,
+            "new_value_kb": 65536,
+            "time_cost": 3,
+            "parallelism": 4,
+        },
+        "correlation_id": "config-argon2-surge-0904",
+        "related_service": "auth-service",
+        "source_metadata": {"collector": "gitops-webhook", "repo": "campusops/helm-charts"},
+    },
+    {
+        "id": uuid.UUID("c3333333-0000-0000-0000-000000000003"),
+        "evidence_type": EvidenceType.LOG,
+        "source_type": "metric",
+        "service_name": "auth-service",
+        "event_time": datetime(2026, 10, 31, 9, 12, 0, tzinfo=timezone.utc),
+        "severity": "critical",
+        "title": "Auth-Service Pod CPU Utilization Pegged at 98.4% (Severe CFS Throttling)",
+        "content": (
+            "Kubernetes metrics server reports CPU throttling rate of 42.1% on all 3 auth-service pods. "
+            "CPU utilization exceeded 98.4% of container limits during concurrent login requests."
+        ),
+        "details": {
+            "cpu_utilization_pct": 98.4,
+            "cfs_throttled_periods_pct": 42.1,
+            "active_worker_threads": 32,
+            "queued_requests": 142,
+        },
+        "correlation_id": "metric-cpu-throttle-0912",
+        "related_service": "portal-gateway",
+        "source_metadata": {"collector": "prometheus-k8s-cgroup", "cluster": "campus-prod-us-east"},
+    },
+    {
+        "id": uuid.UUID("c3333333-0000-0000-0000-000000000004"),
+        "evidence_type": EvidenceType.LOG,
+        "source_type": "trace",
+        "service_name": "portal-gateway",
+        "event_time": datetime(2026, 10, 31, 9, 15, 0, tzinfo=timezone.utc),
+        "severity": "critical",
+        "title": "Trace Breakdown: auth:argon2_verify Span Consumes 8,240ms of Request Budget",
+        "content": (
+            "Distributed trace analysis reveals auth:argon2_verify span duration surged from baseline "
+            "320ms to 8,240ms. Gateway timeout threshold (10.0s) tripped for 78% of login requests."
+        ),
+        "details": {
+            "trace_id": "trace-argon2-thrash-0915",
+            "total_latency_ms": 10120,
+            "spans": [
+                {"name": "gateway:ingress", "duration_ms": 3},
+                {"name": "auth:argon2_verify", "duration_ms": 8240, "status": "THROTTLED"},
+                {"name": "auth:db_pool_acquisition", "duration_ms": 14, "status": "OK"},
+            ],
+        },
+        "correlation_id": "trace-argon2-thrash-0915",
+        "related_service": "auth-service",
+        "source_metadata": {"collector": "opentelemetry-collector", "sampler": "100%"},
+    },
+    {
+        "id": uuid.UUID("c3333333-0000-0000-0000-000000000005"),
+        "evidence_type": EvidenceType.USER_REPORT,
+        "source_type": "alert",
+        "service_name": "portal-gateway",
+        "event_time": datetime(2026, 10, 31, 9, 17, 0, tzinfo=timezone.utc),
+        "severity": "critical",
+        "title": "AlertManager P1: Upstream Gateway 504 Rate Exceeds 40%",
+        "content": (
+            "Alert 'PortalGatewayHigh504Rate' firing: HTTP 504 Gateway Timeouts on POST /api/auth/login "
+            "reached 41.2% over 5m sliding window. Upstream service auth-service unresponsive."
+        ),
+        "details": {
+            "alert": "PortalGatewayHigh504Rate",
+            "error_rate_pct": 41.2,
+            "evaluated_window": "5m",
+            "pagerduty_incident": "PD-99214",
+        },
+        "correlation_id": "alert-gateway-504-0917",
+        "related_service": "auth-service",
+        "source_metadata": {"collector": "alertmanager", "receiver": "pagerduty-sre"},
+    },
+]
+
+
+async def seed_demo_incident(
+    db: AsyncSession,
+    current_user_id: uuid.UUID | None = None,
+    target_scenario_id: uuid.UUID | None = None,
+) -> Incident:
+    """Seed or update the canonical deterministic demo incident scenarios and evidence items."""
     # Find existing user if not provided
     if not current_user_id:
         result = await db.execute(select(User).limit(1))
@@ -312,44 +557,126 @@ async def seed_demo_incident(db: AsyncSession, current_user_id: uuid.UUID | None
         else:
             raise ValueError("No existing user found to report the demo incident.")
 
-    # 1. Upsert Incident record
-    stmt = select(Incident).where(Incident.id == DEMO_INCIDENT_ID)
-    incident_result = await db.execute(stmt)
-    incident = incident_result.scalars().first()
+    target_id = target_scenario_id or SCENARIO_1_ID
+    target_incident = None
 
-    if not incident:
-        incident = Incident(
-            id=DEMO_INCIDENT_ID,
-            title="Elevated HTTP 504 Gateway Timeouts & Auth Failure Cascade on Student Portal",
-            description=(
-                "[SIMULATED INCIDENT DATA] High-volume 504 Gateway Timeouts impacting student portal login "
-                "during peak course registration window. Downstream dependencies between portal gateway, "
-                "auth-service, and PostgreSQL database exhibit severe connection pool saturation."
-            ),
-            status=IncidentStatus.INVESTIGATING,
-            priority=IncidentPriority.CRITICAL,
-            category=IncidentCategory.SOFTWARE,
-            reported_by=current_user_id,
-            ai_classification={
-                "incident_type": "authentication_cascade",
-                "affected_layer": "backend_database",
-                "confidence": 0.96,
-                "simulated": True,
-            },
-        )
-        db.add(incident)
-        await db.flush()
-    else:
-        incident.title = "Elevated HTTP 504 Gateway Timeouts & Auth Failure Cascade on Student Portal"
-        incident.status = IncidentStatus.INVESTIGATING
-        incident.priority = IncidentPriority.CRITICAL
-        incident.ai_root_cause = None
-        incident.ai_resolution = None
-        incident.resolved_at = None
+    # Upsert only the requested scenario so canonical tests expecting single-incident remain 100% passing
+    if target_id == SCENARIO_1_ID:
+        stmt1 = select(Incident).where(Incident.id == SCENARIO_1_ID)
+        res1 = await db.execute(stmt1)
+        inc1 = res1.scalars().first()
+        if not inc1:
+            inc1 = Incident(
+                id=SCENARIO_1_ID,
+                title="Elevated HTTP 504 Gateway Timeouts & Auth Failure Cascade on Student Portal",
+                description=(
+                    "[SIMULATED INCIDENT DATA] High-volume 504 Gateway Timeouts impacting student portal login "
+                    "during peak course registration window. Downstream dependencies between portal gateway, "
+                    "auth-service, and PostgreSQL database exhibit severe connection pool saturation."
+                ),
+                status=IncidentStatus.INVESTIGATING,
+                priority=IncidentPriority.CRITICAL,
+                category=IncidentCategory.SOFTWARE,
+                reported_by=current_user_id,
+                ai_classification={
+                    "incident_type": "authentication_cascade",
+                    "affected_layer": "backend_database",
+                    "confidence": 0.96,
+                    "simulated": True,
+                },
+            )
+            db.add(inc1)
+        else:
+            inc1.title = "Elevated HTTP 504 Gateway Timeouts & Auth Failure Cascade on Student Portal"
+            inc1.status = IncidentStatus.INVESTIGATING
+            inc1.priority = IncidentPriority.CRITICAL
+            inc1.category = IncidentCategory.SOFTWARE
+            inc1.ai_root_cause = None
+            inc1.ai_resolution = None
+            inc1.resolved_at = None
+        target_incident = inc1
 
-    # 2. Upsert the 11 Evidence items
+    elif target_id == SCENARIO_2_ID:
+        stmt2 = select(Incident).where(Incident.id == SCENARIO_2_ID)
+        res2 = await db.execute(stmt2)
+        inc2 = res2.scalars().first()
+        if not inc2:
+            inc2 = Incident(
+                id=SCENARIO_2_ID,
+                title="Campus Wi-Fi Ingress Degradation & DHCP Scope Exhaustion (Library Zone)",
+                description=(
+                    "[SIMULATED INCIDENT DATA] Student portal completely inaccessible for students on campus wireless "
+                    "in Library Floor 2. Heavy client association spike reached 128 clients on AP ap-lib-floor2, "
+                    "causing 94.2% RF saturation and total exhaustion of DHCP subnet 10.0.4.0/24 leases."
+                ),
+                status=IncidentStatus.INVESTIGATING,
+                priority=IncidentPriority.HIGH,
+                category=IncidentCategory.HARDWARE,
+                reported_by=current_user_id,
+                ai_classification={
+                    "incident_type": "wifi_dhcp_exhaustion",
+                    "affected_layer": "campus_network_hardware",
+                    "confidence": 0.94,
+                    "simulated": True,
+                },
+            )
+            db.add(inc2)
+        else:
+            inc2.title = "Campus Wi-Fi Ingress Degradation & DHCP Scope Exhaustion (Library Zone)"
+            inc2.status = IncidentStatus.INVESTIGATING
+            inc2.priority = IncidentPriority.HIGH
+            inc2.category = IncidentCategory.HARDWARE
+            inc2.ai_root_cause = None
+            inc2.ai_resolution = None
+            inc2.resolved_at = None
+        target_incident = inc2
+
+    elif target_id == SCENARIO_3_ID:
+        stmt3 = select(Incident).where(Incident.id == SCENARIO_3_ID)
+        res3 = await db.execute(stmt3)
+        inc3 = res3.scalars().first()
+        if not inc3:
+            inc3 = Incident(
+                id=SCENARIO_3_ID,
+                title="Auth-Service CPU Starvation via Argon2id Memory Thrashing in Canary v2.4.1",
+                description=(
+                    "[SIMULATED INCIDENT DATA] Critical response latency surge across campus portal authentication flow. "
+                    "Canary deployment v2.4.1 increased Argon2id memory cost parameter to 64MB per verification, driving "
+                    "auth-service pod CPU utilization to 98.4% with 42.1% CFS throttling under concurrent login load."
+                ),
+                status=IncidentStatus.INVESTIGATING,
+                priority=IncidentPriority.CRITICAL,
+                category=IncidentCategory.SOFTWARE,
+                reported_by=current_user_id,
+                ai_classification={
+                    "incident_type": "canary_cpu_thrashing",
+                    "affected_layer": "crypto_microservice",
+                    "confidence": 0.97,
+                    "simulated": True,
+                },
+            )
+            db.add(inc3)
+        else:
+            inc3.title = "Auth-Service CPU Starvation via Argon2id Memory Thrashing in Canary v2.4.1"
+            inc3.status = IncidentStatus.INVESTIGATING
+            inc3.priority = IncidentPriority.CRITICAL
+            inc3.category = IncidentCategory.SOFTWARE
+            inc3.ai_root_cause = None
+            inc3.ai_resolution = None
+            inc3.resolved_at = None
+        target_incident = inc3
+
+    await db.flush()
+
+    # 2. Upsert Evidence items for the target scenario
     now_utc = datetime.now(timezone.utc)
-    for item in DEMO_EVIDENCE_DEFINITIONS:
+    ev_defs = (
+        SCENARIO_2_EVIDENCE_DEFINITIONS
+        if target_id == SCENARIO_2_ID
+        else (SCENARIO_3_EVIDENCE_DEFINITIONS if target_id == SCENARIO_3_ID else DEMO_EVIDENCE_DEFINITIONS)
+    )
+
+    for item in ev_defs:
         ev_id = item["id"]
         ev_stmt = select(Evidence).where(Evidence.id == ev_id)
         ev_result = await db.execute(ev_stmt)
@@ -371,7 +698,7 @@ async def seed_demo_incident(db: AsyncSession, current_user_id: uuid.UUID | None
         if not existing_ev:
             new_ev = Evidence(
                 id=ev_id,
-                incident_id=DEMO_INCIDENT_ID,
+                incident_id=target_id,
                 evidence_type=item["evidence_type"],
                 title=item["title"],
                 content=item["content"],
@@ -379,6 +706,7 @@ async def seed_demo_incident(db: AsyncSession, current_user_id: uuid.UUID | None
             )
             db.add(new_ev)
         else:
+            existing_ev.incident_id = target_id
             existing_ev.title = item["title"]
             existing_ev.content = item["content"]
             existing_ev.extra_metadata = metadata
@@ -465,8 +793,10 @@ async def seed_demo_incident(db: AsyncSession, current_user_id: uuid.UUID | None
             existing_dev.health_metrics = d_item["health_metrics"]
 
     await db.commit()
-    await db.refresh(incident)
-    return incident
+    target_stmt = select(Incident).where(Incident.id == target_id)
+    target_res = await db.execute(target_stmt)
+    target_incident = target_res.scalars().first()
+    return target_incident or inc1
 
 
 def _normalize_evidence(ev: Evidence) -> NormalizedEvidenceItem:
@@ -553,6 +883,7 @@ async def list_incidents(db: AsyncSession, limit: int = 50) -> list[IncidentSumm
 
     summaries = []
     for inc, ev_count in rows:
+        aff_count = 5 if inc.id == SCENARIO_1_ID else (3 if inc.id in (SCENARIO_2_ID, SCENARIO_3_ID) else 1)
         summaries.append(
             IncidentSummary(
                 id=inc.id,
@@ -563,7 +894,7 @@ async def list_incidents(db: AsyncSession, limit: int = 50) -> list[IncidentSumm
                 category=inc.category.value,
                 created_at=inc.created_at,
                 evidence_count=ev_count,
-                affected_services_count=5 if inc.id == DEMO_INCIDENT_ID else 1,
+                affected_services_count=aff_count,
                 simulated=True,
             )
         )
@@ -582,6 +913,7 @@ async def get_incident_summary(db: AsyncSession, incident_id: uuid.UUID) -> Inci
     ev_count_res = await db.execute(ev_count_stmt)
     ev_count = ev_count_res.scalar_one()
 
+    aff_count = 5 if inc.id == SCENARIO_1_ID else (3 if inc.id in (SCENARIO_2_ID, SCENARIO_3_ID) else 1)
     return IncidentSummary(
         id=inc.id,
         title=inc.title,
@@ -591,7 +923,7 @@ async def get_incident_summary(db: AsyncSession, incident_id: uuid.UUID) -> Inci
         category=inc.category.value,
         created_at=inc.created_at,
         evidence_count=ev_count,
-        affected_services_count=5 if inc.id == DEMO_INCIDENT_ID else 1,
+        affected_services_count=aff_count,
         simulated=True,
     )
 
@@ -671,134 +1003,318 @@ async def get_service_dependency_graph(
         service_evidence_map.setdefault(ev.service_name, []).append(ev.evidence_id)
 
     # Define standard topology with impact based on mapped evidence
-    nodes = [
-        ServiceNode(
-            id="student-portal-ui",
-            name="Student Portal UI (Next.js)",
-            service_type="frontend",
-            status="degraded",
-            impact="high",
-            metrics_summary={
-                "failure_rate": "84.2%",
-                "p99_latency": "11.4s",
-                "client_504_errors": 354,
-            },
-            supporting_evidence_ids=service_evidence_map.get("student-portal-ui", []),
-        ),
-        ServiceNode(
-            id="portal-gateway",
-            name="API Portal Gateway (Envoy/Nginx)",
-            service_type="gateway",
-            status="critical",
-            impact="high",
-            metrics_summary={
-                "http_504_rate": "14.8%",
-                "p99_latency": "10.8s",
-                "upstream_timeouts": 128,
-            },
-            supporting_evidence_ids=service_evidence_map.get("portal-gateway", []),
-        ),
-        ServiceNode(
-            id="auth-service",
-            name="Authentication Microservice (FastAPI)",
-            service_type="microservice",
-            status="critical",
-            impact="root_suspect",
-            metrics_summary={
-                "db_pool_queue_depth": 48,
-                "version": "v2.4.1",
-                "argon2_cost": "64MB",
-                "status": "connection_pool_starved",
-            },
-            supporting_evidence_ids=service_evidence_map.get("auth-service", []),
-        ),
-        ServiceNode(
-            id="campusops-db",
-            name="PostgreSQL Core Database (pgvector)",
-            service_type="database",
-            status="degraded",
-            impact="root_suspect",
-            metrics_summary={
-                "active_connections": "15/15 (100%)",
-                "idle_in_transaction": 13,
-                "blocking_queries": 1,
-            },
-            supporting_evidence_ids=service_evidence_map.get("campusops-db", []),
-        ),
-        ServiceNode(
-            id="redis-session-cache",
-            name="Redis Session & Token Cache",
-            service_type="cache",
-            status="degraded",
-            impact="medium",
-            metrics_summary={
-                "memory_utilization": "88.4%",
-                "eviction_rate": "42/sec",
-                "lock_latency": "+120ms",
-            },
-            supporting_evidence_ids=service_evidence_map.get("redis-session-cache", []),
-        ),
-        ServiceNode(
-            id="campus-ldap-idp",
-            name="Campus Identity Provider (LDAP / SSO)",
-            service_type="idp",
-            status="healthy",
-            impact="none",
-            metrics_summary={
-                "health": "operational",
-                "p95_latency": "18ms",
-                "error_rate": "0.0%",
-            },
-            supporting_evidence_ids=service_evidence_map.get("campus-ldap-idp", []),
-        ),
-    ]
+    if incident_id == SCENARIO_2_ID:
+        nodes = [
+            ServiceNode(
+                id="student-portal-ui",
+                name="Student Portal UI (Next.js)",
+                service_type="frontend",
+                status="degraded",
+                impact="high",
+                metrics_summary={
+                    "failure_rate": "92.0%",
+                    "client_status": "DHCP_FAILED (APIPA 169.254.x.x)",
+                    "wifi_disconnects": 142,
+                },
+                supporting_evidence_ids=service_evidence_map.get("student-portal-ui", []),
+            ),
+            ServiceNode(
+                id="ap-lib-floor2",
+                name="Campus Wi-Fi AP (ap-lib-floor2)",
+                service_type="hardware_ap",
+                status="critical",
+                impact="root_suspect",
+                metrics_summary={
+                    "active_clients": "128 (Limit: 100)",
+                    "channel_utilization": "94.2%",
+                    "packet_loss": "24.8%",
+                },
+                supporting_evidence_ids=service_evidence_map.get("ap-lib-floor2", []),
+            ),
+            ServiceNode(
+                id="gw-border-01",
+                name="Border Gateway & DHCP Relay",
+                service_type="gateway",
+                status="critical",
+                impact="root_suspect",
+                metrics_summary={
+                    "dhcp_leases": "254/254 (0 available)",
+                    "subnet": "10.0.4.0/24",
+                    "rejected_discovers": 42,
+                },
+                supporting_evidence_ids=service_evidence_map.get("gw-border-01", []),
+            ),
+            ServiceNode(
+                id="switch-core-bldg-a",
+                name="Core Backbone Switch (switch-core-bldg-a)",
+                service_type="switch",
+                status="healthy",
+                impact="none",
+                metrics_summary={
+                    "crc_errors": 0,
+                    "link_state": "10G Full-Duplex",
+                    "health": "operational",
+                },
+                supporting_evidence_ids=service_evidence_map.get("switch-core-bldg-a", []),
+            ),
+        ]
+        edges = [
+            ServiceEdge(
+                source="student-portal-ui",
+                target="ap-lib-floor2",
+                relationship="connects_wifi",
+                protocol="802.11ax/WPA3",
+                is_degraded=True,
+            ),
+            ServiceEdge(
+                source="ap-lib-floor2",
+                target="switch-core-bldg-a",
+                relationship="uplink_trunk",
+                protocol="10GBASE-T",
+                is_degraded=True,
+            ),
+            ServiceEdge(
+                source="switch-core-bldg-a",
+                target="gw-border-01",
+                relationship="dhcp_relay",
+                protocol="UDP/67-68",
+                is_degraded=True,
+            ),
+        ]
+        root_suspects = ["ap-lib-floor2", "gw-border-01"]
+        affected_services = ["student-portal-ui", "ap-lib-floor2", "gw-border-01"]
 
-    edges = [
-        ServiceEdge(
-            source="student-portal-ui",
-            target="portal-gateway",
-            relationship="routes_traffic",
-            protocol="HTTPS/REST",
-            is_degraded=True,
-        ),
-        ServiceEdge(
-            source="portal-gateway",
-            target="auth-service",
-            relationship="authenticates_request",
-            protocol="HTTP/JSON",
-            is_degraded=True,
-        ),
-        ServiceEdge(
-            source="auth-service",
-            target="campusops-db",
-            relationship="queries_user_session",
-            protocol="PostgreSQL/TCP",
-            is_degraded=True,
-        ),
-        ServiceEdge(
-            source="auth-service",
-            target="redis-session-cache",
-            relationship="caches_auth_tokens",
-            protocol="Redis/RESP",
-            is_degraded=True,
-        ),
-        ServiceEdge(
-            source="auth-service",
-            target="campus-ldap-idp",
-            relationship="validates_directory_credentials",
-            protocol="LDAPS/TCP",
-            is_degraded=False,
-        ),
-    ]
+    elif incident_id == SCENARIO_3_ID:
+        nodes = [
+            ServiceNode(
+                id="student-portal-ui",
+                name="Student Portal UI (Next.js)",
+                service_type="frontend",
+                status="degraded",
+                impact="high",
+                metrics_summary={
+                    "failure_rate": "41.2%",
+                    "p99_latency": "10.1s",
+                    "client_504_errors": 184,
+                },
+                supporting_evidence_ids=service_evidence_map.get("student-portal-ui", []),
+            ),
+            ServiceNode(
+                id="portal-gateway",
+                name="API Portal Gateway (Envoy/Nginx)",
+                service_type="gateway",
+                status="critical",
+                impact="high",
+                metrics_summary={
+                    "http_504_rate": "41.2%",
+                    "p99_latency": "10.1s",
+                    "upstream_timeouts": 142,
+                },
+                supporting_evidence_ids=service_evidence_map.get("portal-gateway", []),
+            ),
+            ServiceNode(
+                id="auth-service",
+                name="Authentication Microservice (FastAPI)",
+                service_type="microservice",
+                status="critical",
+                impact="root_suspect",
+                metrics_summary={
+                    "cpu_utilization": "98.4%",
+                    "cfs_throttled": "42.1%",
+                    "argon2_cost": "64MB (65536 KB)",
+                    "version": "canary-v2.4.1",
+                },
+                supporting_evidence_ids=service_evidence_map.get("auth-service", []),
+            ),
+            ServiceNode(
+                id="campusops-db",
+                name="PostgreSQL Core Database (pgvector)",
+                service_type="database",
+                status="healthy",
+                impact="none",
+                metrics_summary={
+                    "active_connections": "4/100 (4%)",
+                    "idle_in_transaction": 0,
+                    "blocking_queries": 0,
+                },
+                supporting_evidence_ids=service_evidence_map.get("campusops-db", []),
+            ),
+            ServiceNode(
+                id="campus-ldap-idp",
+                name="Campus Identity Provider (LDAP / SSO)",
+                service_type="idp",
+                status="healthy",
+                impact="none",
+                metrics_summary={
+                    "health": "operational",
+                    "p95_latency": "16ms",
+                    "error_rate": "0.0%",
+                },
+                supporting_evidence_ids=service_evidence_map.get("campus-ldap-idp", []),
+            ),
+        ]
+        edges = [
+            ServiceEdge(
+                source="student-portal-ui",
+                target="portal-gateway",
+                relationship="routes_traffic",
+                protocol="HTTPS/REST",
+                is_degraded=True,
+            ),
+            ServiceEdge(
+                source="portal-gateway",
+                target="auth-service",
+                relationship="authenticates_request",
+                protocol="HTTP/JSON",
+                is_degraded=True,
+            ),
+            ServiceEdge(
+                source="auth-service",
+                target="campusops-db",
+                relationship="queries_user_session",
+                protocol="PostgreSQL/TCP",
+                is_degraded=False,
+            ),
+            ServiceEdge(
+                source="auth-service",
+                target="campus-ldap-idp",
+                relationship="validates_directory_credentials",
+                protocol="LDAPS/TCP",
+                is_degraded=False,
+            ),
+        ]
+        root_suspects = ["auth-service"]
+        affected_services = ["student-portal-ui", "portal-gateway", "auth-service"]
 
-    root_suspects = ["auth-service", "campusops-db"]
-    affected_services = [
-        "student-portal-ui",
-        "portal-gateway",
-        "auth-service",
-        "campusops-db",
-        "redis-session-cache",
-    ]
+    else:
+        nodes = [
+            ServiceNode(
+                id="student-portal-ui",
+                name="Student Portal UI (Next.js)",
+                service_type="frontend",
+                status="degraded",
+                impact="high",
+                metrics_summary={
+                    "failure_rate": "84.2%",
+                    "p99_latency": "11.4s",
+                    "client_504_errors": 354,
+                },
+                supporting_evidence_ids=service_evidence_map.get("student-portal-ui", []),
+            ),
+            ServiceNode(
+                id="portal-gateway",
+                name="API Portal Gateway (Envoy/Nginx)",
+                service_type="gateway",
+                status="critical",
+                impact="high",
+                metrics_summary={
+                    "http_504_rate": "14.8%",
+                    "p99_latency": "10.8s",
+                    "upstream_timeouts": 128,
+                },
+                supporting_evidence_ids=service_evidence_map.get("portal-gateway", []),
+            ),
+            ServiceNode(
+                id="auth-service",
+                name="Authentication Microservice (FastAPI)",
+                service_type="microservice",
+                status="critical",
+                impact="root_suspect",
+                metrics_summary={
+                    "db_pool_queue_depth": 48,
+                    "version": "v2.4.1",
+                    "argon2_cost": "64MB",
+                    "status": "connection_pool_starved",
+                },
+                supporting_evidence_ids=service_evidence_map.get("auth-service", []),
+            ),
+            ServiceNode(
+                id="campusops-db",
+                name="PostgreSQL Core Database (pgvector)",
+                service_type="database",
+                status="degraded",
+                impact="root_suspect",
+                metrics_summary={
+                    "active_connections": "15/15 (100%)",
+                    "idle_in_transaction": 13,
+                    "blocking_queries": 1,
+                },
+                supporting_evidence_ids=service_evidence_map.get("campusops-db", []),
+            ),
+            ServiceNode(
+                id="redis-session-cache",
+                name="Redis Session & Token Cache",
+                service_type="cache",
+                status="degraded",
+                impact="medium",
+                metrics_summary={
+                    "memory_utilization": "88.4%",
+                    "eviction_rate": "42/sec",
+                    "lock_latency": "+120ms",
+                },
+                supporting_evidence_ids=service_evidence_map.get("redis-session-cache", []),
+            ),
+            ServiceNode(
+                id="campus-ldap-idp",
+                name="Campus Identity Provider (LDAP / SSO)",
+                service_type="idp",
+                status="healthy",
+                impact="none",
+                metrics_summary={
+                    "health": "operational",
+                    "p95_latency": "18ms",
+                    "error_rate": "0.0%",
+                },
+                supporting_evidence_ids=service_evidence_map.get("campus-ldap-idp", []),
+            ),
+        ]
+
+        edges = [
+            ServiceEdge(
+                source="student-portal-ui",
+                target="portal-gateway",
+                relationship="routes_traffic",
+                protocol="HTTPS/REST",
+                is_degraded=True,
+            ),
+            ServiceEdge(
+                source="portal-gateway",
+                target="auth-service",
+                relationship="authenticates_request",
+                protocol="HTTP/JSON",
+                is_degraded=True,
+            ),
+            ServiceEdge(
+                source="auth-service",
+                target="campusops-db",
+                relationship="queries_user_session",
+                protocol="PostgreSQL/TCP",
+                is_degraded=True,
+            ),
+            ServiceEdge(
+                source="auth-service",
+                target="redis-session-cache",
+                relationship="caches_auth_tokens",
+                protocol="Redis/RESP",
+                is_degraded=True,
+            ),
+            ServiceEdge(
+                source="auth-service",
+                target="campus-ldap-idp",
+                relationship="validates_directory_credentials",
+                protocol="LDAPS/TCP",
+                is_degraded=False,
+            ),
+        ]
+
+        root_suspects = ["auth-service", "campusops-db"]
+        affected_services = [
+            "student-portal-ui",
+            "portal-gateway",
+            "auth-service",
+            "campusops-db",
+            "redis-session-cache",
+        ]
 
     return ServiceDependencyGraphResponse(
         incident_id=incident.id,
@@ -844,12 +1360,27 @@ async def get_evidence_bundle(
         "end": normalized[-1].event_time if normalized else None,
     }
 
-    data_quality_notes = [
-        "All 11 multi-source evidence records strictly correlated via ISO 8601 UTC timestamps.",
-        "Clock skew across collector nodes verified within 15ms tolerance window.",
-        "Distributed trace IDs [req-c83109a1, trace-8891bf40aa91] link ingress gateway to database pool timeout.",
-        "Simulated test data generated for TCS Hackathon AIOps Challenge demonstration.",
-    ]
+    if incident_id == SCENARIO_2_ID:
+        data_quality_notes = [
+            "Access point ap-lib-floor2 telemetry confirms 94.2% RF channel saturation and 128 client associations.",
+            "Infoblox DHCP syslog confirms 100% lease exhaustion (254/254) on subnet 10.0.4.0/24.",
+            "Student portal logs confirm APIPA 169.254.x.x assignment and gateway unreachability.",
+            "Simulated test data generated for TCS Hackathon AIOps Challenge demonstration.",
+        ]
+    elif incident_id == SCENARIO_3_ID:
+        data_quality_notes = [
+            "ArgoCD canary rollout v2.4.1 correlated with 64MB Argon2id memory cost surge.",
+            "Prometheus cgroup metrics confirm 98.4% CPU utilization and 42.1% CFS throttling.",
+            "OpenTelemetry trace spans isolate 8,240ms duration inside auth:argon2_verify span.",
+            "Simulated test data generated for TCS Hackathon AIOps Challenge demonstration.",
+        ]
+    else:
+        data_quality_notes = [
+            "All 11 multi-source evidence records strictly correlated via ISO 8601 UTC timestamps.",
+            "Clock skew across collector nodes verified within 15ms tolerance window.",
+            "Distributed trace IDs [req-c83109a1, trace-8891bf40aa91] link ingress gateway to database pool timeout.",
+            "Simulated test data generated for TCS Hackathon AIOps Challenge demonstration.",
+        ]
 
     bundle_id = f"bundle-{incident_id.hex[:12]}-v1"
 

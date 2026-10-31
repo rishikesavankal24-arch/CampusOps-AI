@@ -24,7 +24,35 @@ import {
   BarChart3,
   Bot,
   UserCheck,
+  Radio,
 } from "lucide-react";
+
+export const DEMO_SCENARIOS = [
+  {
+    id: "11111111-2222-3333-4444-555555555555",
+    label: "Scenario 1: DB Pool Starvation",
+    shortLabel: "Scenario 1: DB Pool Starvation",
+    tag: "SOFTWARE",
+    tagColor: "bg-blue-950 text-blue-300 border-blue-800",
+    description: "PostgreSQL QueuePool limit reduced to 15, causing 504 timeouts cascade during course registration.",
+  },
+  {
+    id: "22222222-2222-3333-4444-555555555555",
+    label: "Scenario 2: Campus Wi-Fi & DHCP Exhaustion",
+    shortLabel: "Scenario 2: Campus Wi-Fi / DHCP Outage",
+    tag: "HARDWARE",
+    tagColor: "bg-rose-950 text-rose-300 border-rose-800",
+    description: "AP ap-lib-floor2 RF saturation & DHCP subnet 10.0.4.0/24 100% exhausted with 24.8% packet loss.",
+  },
+  {
+    id: "33333333-2222-3333-4444-555555555555",
+    label: "Scenario 3: Canary Argon2 CPU Thrashing",
+    shortLabel: "Scenario 3: Canary CPU Thrash",
+    tag: "CANARY",
+    tagColor: "bg-amber-950 text-amber-300 border-amber-800",
+    description: "Canary v2.4.1 increased Argon2id memory_cost to 64MB, causing 98.4% CPU throttling.",
+  },
+];
 
 interface NexoraDashboardViewProps {
   incident: IncidentSummary | null;
@@ -35,7 +63,7 @@ interface NexoraDashboardViewProps {
   tracker: InvestigationTrackerResponse | null;
   onNavigateToTab: (tab: string) => void;
   onSelectIncident?: (incidentId: string) => void;
-  onTriggerDemo: () => Promise<void>;
+  onTriggerDemo: (scenarioId?: string) => Promise<void>;
   onRunNextDiagnostic: () => Promise<void>;
 }
 
@@ -251,6 +279,80 @@ export default function NexoraDashboardView({
       </div>
 
       {/* =========================================================================
+          LIVE SCENARIOS QUICK-SWITCH BAR
+          ========================================================================= */}
+      <div className="bg-[#131d38] border border-[#1e2e54] rounded-xl p-4 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1e2e54] pb-2">
+          <div className="flex items-center gap-2">
+            <Radio className="w-4 h-4 text-sky-400 animate-pulse" />
+            <span className="text-xs font-bold text-slate-100 uppercase tracking-wider">
+              Live Incident Investigation Scenarios
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-950/80 text-sky-300 border border-sky-800">
+              3 Scenarios Ready
+            </span>
+          </div>
+          <span className="text-[11px] text-slate-400 font-mono">
+            Click any scenario to immediately load, reset, and investigate
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {DEMO_SCENARIOS.map((sc) => {
+            const isCurrent = incident?.id === sc.id;
+            return (
+              <div
+                key={sc.id}
+                className={`p-3 rounded-lg border transition-all flex flex-col justify-between gap-2 ${
+                  isCurrent
+                    ? "bg-[#182344] border-sky-500 shadow-md ring-1 ring-sky-500/50"
+                    : "bg-[#0b1329] border-[#1e2e54] hover:border-slate-500 hover:bg-[#111c38]"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span
+                      className={`text-[9px] font-mono uppercase px-1.5 py-0.2 rounded border font-bold ${sc.tagColor}`}
+                    >
+                      {sc.tag}
+                    </span>
+                    {isCurrent && (
+                      <span className="text-[10px] font-mono font-bold text-sky-400 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-200 line-clamp-1">{sc.shortLabel}</h4>
+                  <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                    {sc.description}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1 border-t border-[#1e2e54]/60">
+                  <button
+                    onClick={async () => {
+                      if (onSelectIncident) onSelectIncident(sc.id);
+                      await handleAction(() => onTriggerDemo(sc.id));
+                    }}
+                    disabled={runningAction}
+                    className={`w-full py-1.5 px-2 rounded text-[11px] font-bold font-mono transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                      isCurrent
+                        ? "bg-sky-600 hover:bg-sky-500 text-slate-950"
+                        : "bg-[#131d38] hover:bg-[#1e2e54] text-sky-300 border border-[#1e2e54]"
+                    }`}
+                  >
+                    <Play className="w-3 h-3 fill-current" />
+                    <span>{isCurrent ? "Re-Seed Active" : "Switch & Run"}</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* =========================================================================
           MAIN 2-COLUMN LAYOUT: Main column (chart & incident) + Side column (AI & devices)
           ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -415,30 +517,84 @@ export default function NexoraDashboardView({
 
               {/* Incident Metrics Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-                <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
-                  <span className="text-slate-400 text-[10px] block">Ingress P99 Latency</span>
-                  <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-rose-400"}`}>
-                    {isResolved ? "240ms" : "10.82s"}
-                  </span>
-                </div>
-                <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
-                  <span className="text-slate-400 text-[10px] block">HTTP 504 Rate</span>
-                  <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-rose-400"}`}>
-                    {isResolved ? "0.02%" : "14.8%"}
-                  </span>
-                </div>
-                <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
-                  <span className="text-slate-400 text-[10px] block">DB Pool Utilization</span>
-                  <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-amber-400"}`}>
-                    {isResolved ? "14/50 (28%)" : "15/15 (100%)"}
-                  </span>
-                </div>
-                <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
-                  <span className="text-slate-400 text-[10px] block">Evidence Correlated</span>
-                  <span className="text-sky-300 font-bold">
-                    {timeline?.filtered_events || 11} items
-                  </span>
-                </div>
+                {incident.id === "22222222-2222-3333-4444-555555555555" ? (
+                  <>
+                    <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
+                      <span className="text-slate-400 text-[10px] block">Wi-Fi Packet Loss</span>
+                      <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-rose-400"}`}>
+                        {isResolved ? "0.1%" : "24.8%"}
+                      </span>
+                    </div>
+                    <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
+                      <span className="text-slate-400 text-[10px] block">DHCP Available Leases</span>
+                      <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-rose-400"}`}>
+                        {isResolved ? "256 / 510 Leases" : "0 / 254 (100% Sat)"}
+                      </span>
+                    </div>
+                    <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
+                      <span className="text-slate-400 text-[10px] block">AP Channel Saturation</span>
+                      <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-amber-400"}`}>
+                        {isResolved ? "28.4%" : "94.2%"}
+                      </span>
+                    </div>
+                    <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
+                      <span className="text-slate-400 text-[10px] block">Evidence Correlated</span>
+                      <span className="text-sky-300 font-bold">{timeline?.filtered_events || 5} items</span>
+                    </div>
+                  </>
+                ) : incident.id === "33333333-2222-3333-4444-555555555555" ? (
+                  <>
+                    <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
+                      <span className="text-slate-400 text-[10px] block">Auth Pod CPU</span>
+                      <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-rose-400"}`}>
+                        {isResolved ? "18.2%" : "98.4% (CFS Throttled)"}
+                      </span>
+                    </div>
+                    <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
+                      <span className="text-slate-400 text-[10px] block">Argon2 Hash Duration</span>
+                      <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-rose-400"}`}>
+                        {isResolved ? "310ms" : "8,240ms"}
+                      </span>
+                    </div>
+                    <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
+                      <span className="text-slate-400 text-[10px] block">Gateway 504 Rate</span>
+                      <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-amber-400"}`}>
+                        {isResolved ? "0.02%" : "41.2%"}
+                      </span>
+                    </div>
+                    <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
+                      <span className="text-slate-400 text-[10px] block">Evidence Correlated</span>
+                      <span className="text-sky-300 font-bold">{timeline?.filtered_events || 5} items</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
+                      <span className="text-slate-400 text-[10px] block">Ingress P99 Latency</span>
+                      <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-rose-400"}`}>
+                        {isResolved ? "240ms" : "10.82s"}
+                      </span>
+                    </div>
+                    <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
+                      <span className="text-slate-400 text-[10px] block">HTTP 504 Rate</span>
+                      <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-rose-400"}`}>
+                        {isResolved ? "0.02%" : "14.8%"}
+                      </span>
+                    </div>
+                    <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
+                      <span className="text-slate-400 text-[10px] block">DB Pool Utilization</span>
+                      <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-amber-400"}`}>
+                        {isResolved ? "14/50 (28%)" : "15/15 (100%)"}
+                      </span>
+                    </div>
+                    <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
+                      <span className="text-slate-400 text-[10px] block">Evidence Correlated</span>
+                      <span className="text-sky-300 font-bold">
+                        {timeline?.filtered_events || 11} items
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}

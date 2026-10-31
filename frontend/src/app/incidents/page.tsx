@@ -49,6 +49,30 @@ import {
 
 const DEMO_INCIDENT_ID = "11111111-2222-3333-4444-555555555555";
 
+export const DEMO_SCENARIOS = [
+  {
+    id: "11111111-2222-3333-4444-555555555555",
+    label: "Scenario 1: DB Pool Starvation",
+    shortLabel: "Scenario 1 (DB Pool)",
+    badge: "SOFTWARE",
+    badgeColor: "bg-blue-950 text-blue-300 border-blue-800",
+  },
+  {
+    id: "22222222-2222-3333-4444-555555555555",
+    label: "Scenario 2: Campus Wi-Fi & DHCP Exhaustion",
+    shortLabel: "Scenario 2 (Wi-Fi / DHCP)",
+    badge: "HARDWARE",
+    badgeColor: "bg-rose-950 text-rose-300 border-rose-800",
+  },
+  {
+    id: "33333333-2222-3333-4444-555555555555",
+    label: "Scenario 3: Canary Argon2 CPU Thrashing",
+    shortLabel: "Scenario 3 (Canary CPU)",
+    badge: "CANARY",
+    badgeColor: "bg-amber-950 text-amber-300 border-amber-800",
+  },
+];
+
 export type NavigationTab =
   | "overview"
   | "incidents"
@@ -319,19 +343,23 @@ function IncidentsWorkspaceContent() {
   };
 
   // Re-seed demo telemetry and reset investigation state
-  const handleResetDemo = async () => {
+  const handleResetDemo = async (scenarioId?: string) => {
     try {
       setSeeding(true);
       setError(null);
+      const targetId = scenarioId || selectedIncidentId || DEMO_INCIDENT_ID;
+
       // 1. Re-seed incident & evidence
-      const res = await fetch("/api/incidents", { method: "POST" });
+      const res = await fetch(`/api/incidents?scenario_id=${encodeURIComponent(targetId)}`, {
+        method: "POST",
+      });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.detail || "Reset failed.");
       }
 
       // 2. Explicitly call reset on the investigation orchestrator to return to fresh initial state
-      const invResetRes = await fetch(`/api/incidents/${DEMO_INCIDENT_ID}/investigation/reset`, {
+      const invResetRes = await fetch(`/api/incidents/${targetId}/investigation/reset`, {
         method: "POST",
       });
       if (invResetRes.ok) {
@@ -340,16 +368,24 @@ function IncidentsWorkspaceContent() {
       }
 
       // 3. Refresh tracker & incident summary
-      const trackerRes = await fetch(`/api/incidents/${DEMO_INCIDENT_ID}/investigation/tracker`);
+      const trackerRes = await fetch(`/api/incidents/${targetId}/investigation/tracker`);
       if (trackerRes.ok) {
         setTracker(await trackerRes.json());
       }
-      const incRes = await fetch(`/api/incidents/${DEMO_INCIDENT_ID}`);
+      const incRes = await fetch(`/api/incidents/${targetId}`);
       if (incRes.ok) {
         setIncident(await incRes.json());
       }
 
-      setSelectedIncidentId(DEMO_INCIDENT_ID);
+      setSelectedIncidentId(targetId);
+
+      // 4. Refetch incidents list
+      const listRes = await fetch("/api/incidents");
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        setAllIncidents(listData);
+      }
+
       setRefreshCount((prev) => prev + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to reset demo dataset");
@@ -662,15 +698,38 @@ function IncidentsWorkspaceContent() {
           </div>
 
           {/* Action Controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {/* Scenario Selector Dropdown */}
+            <div className="flex items-center gap-1.5 bg-[#131d38] border border-[#1e2e54] rounded-lg px-2.5 py-1 text-xs">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 font-semibold hidden md:inline">
+                Scenario:
+              </span>
+              <select
+                value={selectedIncidentId}
+                onChange={(e) => {
+                  const newId = e.target.value;
+                  setSelectedIncidentId(newId);
+                  handleResetDemo(newId);
+                }}
+                disabled={seeding}
+                className="bg-transparent text-sky-300 font-medium text-xs border-0 outline-none cursor-pointer focus:ring-0"
+              >
+                {DEMO_SCENARIOS.map((sc) => (
+                  <option key={sc.id} value={sc.id} className="bg-[#0b132b] text-slate-200">
+                    {sc.shortLabel}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <button
-              onClick={handleResetDemo}
+              onClick={() => handleResetDemo(selectedIncidentId)}
               disabled={seeding}
               className="text-xs px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-slate-950 font-bold border border-sky-400 flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50 cursor-pointer"
-              title="Reload clean deterministic telemetry"
+              title="Re-seed telemetry for active scenario"
             >
               <PlayCircle className="w-3.5 h-3.5 text-slate-950" />
-              <span>{seeding ? "Re-seeding..." : "Trigger Demo Incident"}</span>
+              <span>{seeding ? "Re-seeding..." : "Trigger Scenario"}</span>
             </button>
 
             <button
@@ -706,11 +765,16 @@ function IncidentsWorkspaceContent() {
           {activeTab === "overview" && (
             <NexoraDashboardView
               incident={incident}
+              allIncidents={allIncidents}
               timeline={timeline}
               graph={graph}
               investigation={investigation}
               tracker={tracker}
               onNavigateToTab={(tab) => handleTabChange(tab as NavigationTab)}
+              onSelectIncident={(id) => {
+                setSelectedIncidentId(id);
+                setRefreshCount((prev) => prev + 1);
+              }}
               onTriggerDemo={handleResetDemo}
               onRunNextDiagnostic={handleRunDiagnostic}
             />
