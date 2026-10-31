@@ -29,28 +29,28 @@ import {
 
 export const DEMO_SCENARIOS = [
   {
-    id: "11111111-2222-3333-4444-555555555555",
-    label: "Scenario 1: DB Pool Starvation",
-    shortLabel: "Scenario 1: DB Pool Starvation",
-    tag: "SOFTWARE",
-    tagColor: "bg-blue-950 text-blue-300 border-blue-800",
-    description: "PostgreSQL QueuePool limit reduced to 15, causing 504 timeouts cascade during course registration.",
+    id: "44444444-2222-3333-4444-555555555555",
+    label: "Scenario 1: Campus Core Switch Trunk MTU Mismatch & Frame Drops",
+    shortLabel: "Scenario 1: Core Switch MTU Mismatch",
+    tag: "CORE SWITCHING",
+    tagColor: "bg-cyan-950 text-cyan-300 border-cyan-800",
+    description: "Core switch Te1/0/1 MTU 1500 mismatch against peer MTU 9216, causing 380 jumbo frame discards/sec.",
   },
   {
     id: "22222222-2222-3333-4444-555555555555",
-    label: "Scenario 2: Campus Wi-Fi & DHCP Exhaustion",
+    label: "Scenario 2: Campus Wi-Fi Degradation & DHCP Scope Exhaustion",
     shortLabel: "Scenario 2: Campus Wi-Fi / DHCP Outage",
-    tag: "HARDWARE",
+    tag: "WIRELESS & DHCP",
     tagColor: "bg-rose-950 text-rose-300 border-rose-800",
-    description: "AP ap-lib-floor2 RF saturation & DHCP subnet 10.0.4.0/24 100% exhausted with 24.8% packet loss.",
+    description: "Library zone AP ap-lib-floor2 RF saturation & DHCP subnet 10.0.4.0/24 100% exhausted with 24.8% packet loss.",
   },
   {
     id: "33333333-2222-3333-4444-555555555555",
-    label: "Scenario 3: Canary Argon2 CPU Thrashing",
-    shortLabel: "Scenario 3: Canary CPU Thrash",
-    tag: "CANARY",
+    label: "Scenario 3: Border Gateway BGP Route Flapping & Edge Firewall Drift",
+    shortLabel: "Scenario 3: Border BGP & Edge Firewall",
+    tag: "WAN & FIREWALL",
     tagColor: "bg-amber-950 text-amber-300 border-amber-800",
-    description: "Canary v2.4.1 increased Argon2id memory_cost to 64MB, causing 98.4% CPU throttling.",
+    description: "Border gateway BGP peer hold-timer flaps (14x) and edge firewall policy rule #118 shadows academic transit.",
   },
 ];
 
@@ -545,21 +545,21 @@ export default function NexoraDashboardView({
                 ) : incident.id === "33333333-2222-3333-4444-555555555555" ? (
                   <>
                     <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
-                      <span className="text-slate-400 text-[10px] block">Auth Pod CPU</span>
+                      <span className="text-slate-400 text-[10px] block">BGP Peer Flaps</span>
                       <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-rose-400"}`}>
-                        {isResolved ? "18.2%" : "98.4% (CFS Throttled)"}
+                        {isResolved ? "0 flaps (STABLE)" : "14 flaps / 1h"}
                       </span>
                     </div>
                     <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
-                      <span className="text-slate-400 text-[10px] block">Argon2 Hash Duration</span>
+                      <span className="text-slate-400 text-[10px] block">Firewall Policy Drops</span>
                       <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-rose-400"}`}>
-                        {isResolved ? "310ms" : "8,240ms"}
+                        {isResolved ? "0 drops/min" : "4,280 drops/min"}
                       </span>
                     </div>
                     <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
-                      <span className="text-slate-400 text-[10px] block">Gateway 504 Rate</span>
+                      <span className="text-slate-400 text-[10px] block">WAN Packet Loss</span>
                       <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-amber-400"}`}>
-                        {isResolved ? "0.02%" : "41.2%"}
+                        {isResolved ? "0.0%" : "31.4%"}
                       </span>
                     </div>
                     <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
@@ -570,27 +570,27 @@ export default function NexoraDashboardView({
                 ) : (
                   <>
                     <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
-                      <span className="text-slate-400 text-[10px] block">Ingress P99 Latency</span>
+                      <span className="text-slate-400 text-[10px] block">Trunk Packet Discards</span>
                       <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-rose-400"}`}>
-                        {isResolved ? "240ms" : "10.82s"}
+                        {isResolved ? "0 drops/sec" : "380 drops/sec"}
                       </span>
                     </div>
                     <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
-                      <span className="text-slate-400 text-[10px] block">HTTP 504 Rate</span>
+                      <span className="text-slate-400 text-[10px] block">MTU Sweep Status</span>
                       <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-rose-400"}`}>
-                        {isResolved ? "0.02%" : "14.8%"}
+                        {isResolved ? "9000B PASS (0% Loss)" : "1500B FAIL (100% Loss)"}
                       </span>
                     </div>
                     <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
-                      <span className="text-slate-400 text-[10px] block">DB Pool Utilization</span>
+                      <span className="text-slate-400 text-[10px] block">Gateway HTTP 504 Rate</span>
                       <span className={`font-bold ${isResolved ? "text-emerald-400" : "text-amber-400"}`}>
-                        {isResolved ? "14/50 (28%)" : "15/15 (100%)"}
+                        {isResolved ? "0.01%" : "34.2%"}
                       </span>
                     </div>
                     <div className="bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54]">
                       <span className="text-slate-400 text-[10px] block">Evidence Correlated</span>
                       <span className="text-sky-300 font-bold">
-                        {timeline?.filtered_events || 11} items
+                        {timeline?.filtered_events || 5} items
                       </span>
                     </div>
                   </>
@@ -730,7 +730,9 @@ export default function NexoraDashboardView({
                 </h4>
 
                 <div className="text-[11px] text-slate-300 font-mono bg-[#0b1329] p-2.5 rounded-lg border border-[#1e2e54] flex items-center justify-between">
-                  <span className="truncate">Root Cause: DB connection pool starvation (15/15)</span>
+                  <span className="truncate">
+                    {leadingHypothesis.confidence_rationale || leadingHypothesis.explanation}
+                  </span>
                   <button
                     onClick={() => onNavigateToTab("investigation")}
                     className="text-sky-400 hover:text-sky-200 underline shrink-0 ml-2 text-[10px]"
@@ -745,7 +747,7 @@ export default function NexoraDashboardView({
             <div className="grid grid-cols-2 gap-2 text-[10px] font-mono pt-1">
               <div className="bg-[#0b1329] p-2 rounded border border-[#1e2e54]">
                 <span className="text-emerald-400 font-bold block">
-                  &bull; {leadingHypothesis?.supporting_evidence_ids.length || 6} Supporting
+                  &bull; {leadingHypothesis?.supporting_evidence_ids.length || 0} Supporting
                 </span>
                 <span className="text-slate-400">Traces, logs, metrics</span>
               </div>
@@ -753,7 +755,7 @@ export default function NexoraDashboardView({
                 <span className="text-rose-400 font-bold block">
                   &bull; {leadingHypothesis?.contradicting_evidence_ids.length || 0} Contradicting
                 </span>
-                <span className="text-slate-400">Network L3/L4 clear</span>
+                <span className="text-slate-400">Ruled out alternatives</span>
               </div>
             </div>
 
@@ -889,7 +891,13 @@ export default function NexoraDashboardView({
                     <span className="font-mono font-bold text-slate-200 truncate">
                       {dev.device_name}
                     </span>
-                    <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-emerald-950/70 text-emerald-400 border border-emerald-800/60 font-semibold">
+                    <span
+                      className={`text-[9px] font-mono px-1.5 py-0.5 rounded border font-semibold ${
+                        dev.status.includes("DEGRADED")
+                          ? "bg-rose-950/70 text-rose-300 border-rose-800/60"
+                          : "bg-emerald-950/70 text-emerald-400 border-emerald-800/60"
+                      }`}
+                    >
                       {dev.status}
                     </span>
                   </div>

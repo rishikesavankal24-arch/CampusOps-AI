@@ -27,6 +27,7 @@ from app.schemas.incident import (
 
 # Deterministic Multi-Scenario Demo Incident IDs
 SCENARIO_1_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
+NET_SCENARIO_1_ID = uuid.UUID("44444444-2222-3333-4444-555555555555")
 SCENARIO_2_ID = uuid.UUID("22222222-2222-3333-4444-555555555555")
 SCENARIO_3_ID = uuid.UUID("33333333-2222-3333-4444-555555555555")
 DEMO_INCIDENT_ID = SCENARIO_1_ID
@@ -303,6 +304,125 @@ DEMO_EVIDENCE_DEFINITIONS = [
     },
 ]
 
+# Scenario 1 (MTU Mismatch) Evidence: Core Switch Trunk MTU Mismatch (Network Hardware)
+SCENARIO_MTU_EVIDENCE_DEFINITIONS = [
+    {
+        "id": uuid.UUID("d4444444-0000-0000-0000-000000000001"),
+        "evidence_type": EvidenceType.CONFIG,
+        "source_type": "configuration",
+        "service_name": "switch-core-bldg-a",
+        "event_time": datetime(2026, 10, 31, 9, 0, 0, tzinfo=timezone.utc),
+        "severity": "warning",
+        "title": "GitOps Network Config Push: Interface Te1/0/1 Reset to Default MTU 1500",
+        "content": (
+            "Ansible automation play 'campus-switch-provisioning' pushed commit c718a2f resetting "
+            "switch-core-bldg-a:Te1/0/1 to default campus template (MTU: 1500) rather than jumbo trunk profile (9216)."
+        ),
+        "details": {
+            "device": "switch-core-bldg-a",
+            "interface": "TenGigabitEthernet1/0/1",
+            "old_mtu": 9216,
+            "new_mtu": 1500,
+            "vlan": 100,
+            "commit": "c718a2f",
+            "author": "netops-automation@campusops.internal",
+        },
+        "correlation_id": "gitops-net-c718a2f",
+        "related_service": "switch-dist-bldg-b",
+        "source_metadata": {"collector": "ansible-netconf-audit", "host": "switch-core-bldg-a"},
+    },
+    {
+        "id": uuid.UUID("d4444444-0000-0000-0000-000000000002"),
+        "evidence_type": EvidenceType.LOG,
+        "source_type": "metric",
+        "service_name": "switch-dist-bldg-b",
+        "event_time": datetime(2026, 10, 31, 9, 4, 0, tzinfo=timezone.utc),
+        "severity": "info",
+        "title": "Peer Trunk Interface Eth1/1 Configured for MTU 9216 (Jumbo Frames)",
+        "content": (
+            "Distribution switch switch-dist-bldg-b interface Eth1/1 peer link active with MTU 9216, "
+            "transmitting 8,800-byte jumbo frames across VLAN 100."
+        ),
+        "details": {
+            "device": "switch-dist-bldg-b",
+            "interface": "Ethernet1/1",
+            "configured_mtu": 9216,
+            "jumbo_enabled": True,
+        },
+        "correlation_id": "snmp-mtu-check-0904",
+        "related_service": "switch-core-bldg-a",
+        "source_metadata": {"collector": "telemetry-agent", "host": "switch-dist-bldg-b"},
+    },
+    {
+        "id": uuid.UUID("d4444444-0000-0000-0000-000000000003"),
+        "evidence_type": EvidenceType.LOG,
+        "source_type": "infrastructure_log",
+        "service_name": "switch-core-bldg-a",
+        "event_time": datetime(2026, 10, 31, 9, 8, 0, tzinfo=timezone.utc),
+        "severity": "error",
+        "title": "Kernel Syslog: %ETH-4-PACKET_OVERSIZE Frames Exceeding MTU Discarded",
+        "content": (
+            "switch-core-bldg-a kernel log: %ETH-4-PACKET_OVERSIZE: Interface Te1/0/1 discarded "
+            "1,482 incoming frames exceeding configured MTU of 1500 bytes."
+        ),
+        "details": {
+            "facility": "ETH",
+            "severity": 4,
+            "mnemonic": "PACKET_OVERSIZE",
+            "dropped_frames": 1482,
+            "interface": "Te1/0/1",
+        },
+        "correlation_id": "syslog-oversize-0908",
+        "related_service": "portal-gateway",
+        "source_metadata": {"collector": "rsyslog-collector", "facility": "local7"},
+    },
+    {
+        "id": uuid.UUID("d4444444-0000-0000-0000-000000000004"),
+        "evidence_type": EvidenceType.LOG,
+        "source_type": "metric",
+        "service_name": "switch-core-bldg-a",
+        "event_time": datetime(2026, 10, 31, 9, 16, 0, tzinfo=timezone.utc),
+        "severity": "critical",
+        "title": "ICMP MTU Sweep with DF Bit: 1472B PASS (0% Loss), 1500B FAIL (100% Loss)",
+        "content": (
+            "Network probe diagnostic: ICMP echo with Don't Fragment (DF) bit set passes up to 1472 bytes "
+            "(IP packet 1500 bytes). Echo with 1500+ bytes payload fails with 100% packet loss (Path MTU Blackhole)."
+        ),
+        "details": {
+            "ping_64b_loss": 0.0,
+            "ping_1472b_loss": 0.0,
+            "ping_1500b_loss": 100.0,
+            "df_bit": True,
+            "icmp_type3_code4_status": "DROPPED",
+        },
+        "correlation_id": "ping-df-sweep-0916",
+        "related_service": "portal-gateway",
+        "source_metadata": {"collector": "blackbox-exporter", "target": "switch-core-bldg-a"},
+    },
+    {
+        "id": uuid.UUID("d4444444-0000-0000-0000-000000000005"),
+        "evidence_type": EvidenceType.USER_REPORT,
+        "source_type": "support_ticket",
+        "service_name": "student-portal-ui",
+        "event_time": datetime(2026, 10, 31, 9, 20, 0, tzinfo=timezone.utc),
+        "severity": "error",
+        "title": "Helpdesk Ticket #IT-8841: 'Unable to login to portal for Course Registration'",
+        "content": (
+            "Student ticket submitted: 'Getting 504 Gateway Time Out when attempting to submit login "
+            "credentials for course registration deadline. Small test pages load, but submit fails.'"
+        ),
+        "details": {
+            "ticket_id": "IT-8841",
+            "submitter": "student21@univ.edu",
+            "impact": "High (Course Drop/Add Deadline)",
+            "channel": "Zendesk Help Center",
+        },
+        "correlation_id": "ticket-IT-8841",
+        "related_service": "portal-gateway",
+        "source_metadata": {"collector": "zendesk-sync", "priority": "Urgent"},
+    },
+]
+
 # Scenario 2 Evidence: Campus Wi-Fi & DHCP Pool Exhaustion (Network Hardware)
 SCENARIO_2_EVIDENCE_DEFINITIONS = [
     {
@@ -422,122 +542,118 @@ SCENARIO_2_EVIDENCE_DEFINITIONS = [
     },
 ]
 
-# Scenario 3 Evidence: Auth-Service CPU Starvation via Argon2id Memory Surge (Canary Rollout)
+# Scenario 3 Evidence: Border Gateway BGP Route Flapping & Edge Firewall Policy Drift (Network Perimeter)
 SCENARIO_3_EVIDENCE_DEFINITIONS = [
     {
         "id": uuid.UUID("c3333333-0000-0000-0000-000000000001"),
         "evidence_type": EvidenceType.CONFIG,
-        "source_type": "deployment",
-        "service_name": "auth-service",
+        "source_type": "configuration",
+        "service_name": "firewall-edge-01",
         "event_time": datetime(2026, 10, 31, 9, 2, 0, tzinfo=timezone.utc),
-        "severity": "info",
-        "title": "Canary Rollout auth-service:v2.4.1 Deployed to Cluster",
+        "severity": "critical",
+        "title": "Firewall Rule Drift: SEC-POLICY-BLOCK-UNREGISTERED Shadowed Outbound Transit",
         "content": (
-            "ArgoCD synchronized rollout auth-service:v2.4.1 to cluster prod-us-east. "
-            "Changelog introduces security hardening upgrade to Argon2id key derivation parameters."
+            "Palo Alto firewall security commit pushed rule #118 'SEC-POLICY-BLOCK-UNREGISTERED' above rule #124 "
+            "'PERMIT-ACADEMIC-EGRESS', inadvertently dropping 4,280 legitimate outbound sessions per minute."
         ),
         "details": {
-            "image": "campusops/auth-service:v2.4.1",
-            "commit": "d981a2f",
-            "author": "security-team@campusops.internal",
-            "namespace": "campus-prod",
-            "replicas": 3,
+            "firewall": "firewall-edge-01",
+            "shadowed_rule": "PERMIT-ACADEMIC-EGRESS (#124)",
+            "shadowing_rule": "SEC-POLICY-BLOCK-UNREGISTERED (#118)",
+            "action": "DROP",
+            "author": "secops-bot@campusops.internal",
         },
-        "correlation_id": "deploy-canary-v241",
-        "related_service": "portal-gateway",
-        "source_metadata": {"collector": "argocd-audit", "cluster": "campus-prod-us-east"},
+        "correlation_id": "fw-drift-commit-0902",
+        "related_service": "gw-border-01",
+        "source_metadata": {"collector": "panos-api-audit", "device": "firewall-edge-01"},
     },
     {
         "id": uuid.UUID("c3333333-0000-0000-0000-000000000002"),
-        "evidence_type": EvidenceType.CONFIG,
-        "source_type": "configuration",
-        "service_name": "auth-service",
-        "event_time": datetime(2026, 10, 31, 9, 4, 0, tzinfo=timezone.utc),
-        "severity": "warning",
-        "title": "Argon2id Memory Cost Parameter Increased to 65536 KB (64 MB)",
+        "evidence_type": EvidenceType.LOG,
+        "source_type": "infrastructure_log",
+        "service_name": "gw-border-01",
+        "event_time": datetime(2026, 10, 31, 9, 5, 0, tzinfo=timezone.utc),
+        "severity": "critical",
+        "title": "BGP Peer Flapping: %BGP-5-ADJCHANGE Neighbor 198.51.100.1 Down (Hold Timer Expired)",
         "content": (
-            "Application config parameter 'security.argon2.memory_cost' increased from 16384 (16MB) to 65536 (64MB) "
-            "per verification attempt. CPU cost parameter remained at 3 iterations."
+            "Cisco ISR 4451 syslog: %BGP-5-ADJCHANGE: neighbor 198.51.100.1 Down - BGP hold timer expired. "
+            "Primary ISP transit flapped 14 times in past 25 minutes, causing WAN prefix table oscillations."
         ),
         "details": {
-            "parameter": "security.argon2.memory_cost",
-            "old_value_kb": 16384,
-            "new_value_kb": 65536,
-            "time_cost": 3,
-            "parallelism": 4,
+            "router": "gw-border-01",
+            "neighbor": "198.51.100.1 (AS1299-Primary)",
+            "flap_count": 14,
+            "hold_timer_seconds": 90,
+            "secondary_neighbor": "203.0.113.2 (AS2914-Secondary)",
         },
-        "correlation_id": "config-argon2-surge-0904",
-        "related_service": "auth-service",
-        "source_metadata": {"collector": "gitops-webhook", "repo": "campusops/helm-charts"},
+        "correlation_id": "bgp-flap-adjchange-0905",
+        "related_service": "portal-gateway",
+        "source_metadata": {"collector": "syslog-collector", "host": "gw-border-01"},
     },
     {
         "id": uuid.UUID("c3333333-0000-0000-0000-000000000003"),
         "evidence_type": EvidenceType.LOG,
         "source_type": "metric",
-        "service_name": "auth-service",
-        "event_time": datetime(2026, 10, 31, 9, 12, 0, tzinfo=timezone.utc),
+        "service_name": "firewall-edge-01",
+        "event_time": datetime(2026, 10, 31, 9, 10, 0, tzinfo=timezone.utc),
         "severity": "critical",
-        "title": "Auth-Service Pod CPU Utilization Pegged at 98.4% (Severe CFS Throttling)",
+        "title": "Edge Firewall Egress Drops Surge to 4,280 Sessions/Min",
         "content": (
-            "Kubernetes metrics server reports CPU throttling rate of 42.1% on all 3 auth-service pods. "
-            "CPU utilization exceeded 98.4% of container limits during concurrent login requests."
+            "Palo Alto PA-3220 active traffic log: 4,280 dropped egress sessions/minute on zone 'campus-trust' "
+            "to 'internet-untrust' with reason DROP_SECURITY_POLICY_DENY."
         ),
         "details": {
-            "cpu_utilization_pct": 98.4,
-            "cfs_throttled_periods_pct": 42.1,
-            "active_worker_threads": 32,
-            "queued_requests": 142,
+            "dropped_sessions_min": 4280,
+            "zone_from": "campus-trust",
+            "zone_to": "internet-untrust",
+            "reason": "DROP_SECURITY_POLICY_DENY",
         },
-        "correlation_id": "metric-cpu-throttle-0912",
+        "correlation_id": "fw-metric-drops-0910",
         "related_service": "portal-gateway",
-        "source_metadata": {"collector": "prometheus-k8s-cgroup", "cluster": "campus-prod-us-east"},
+        "source_metadata": {"collector": "panos-metrics-exporter", "device": "firewall-edge-01"},
     },
     {
         "id": uuid.UUID("c3333333-0000-0000-0000-000000000004"),
         "evidence_type": EvidenceType.LOG,
-        "source_type": "trace",
-        "service_name": "portal-gateway",
-        "event_time": datetime(2026, 10, 31, 9, 15, 0, tzinfo=timezone.utc),
+        "source_type": "metric",
+        "service_name": "gw-border-01",
+        "event_time": datetime(2026, 10, 31, 9, 13, 0, tzinfo=timezone.utc),
         "severity": "critical",
-        "title": "Trace Breakdown: auth:argon2_verify Span Consumes 8,240ms of Request Budget",
+        "title": "WAN Egress Packet Loss Spikes to 31.4% (Latency 3,200ms)",
         "content": (
-            "Distributed trace analysis reveals auth:argon2_verify span duration surged from baseline "
-            "320ms to 8,240ms. Gateway timeout threshold (10.0s) tripped for 78% of login requests."
+            "Border gateway blackbox probe: WAN egress packet loss jumped to 31.4%. Round-trip latency "
+            "to external DNS (8.8.8.8) swinging between 14ms and 3,200ms due to BGP route hunting."
         ),
         "details": {
-            "trace_id": "trace-argon2-thrash-0915",
-            "total_latency_ms": 10120,
-            "spans": [
-                {"name": "gateway:ingress", "duration_ms": 3},
-                {"name": "auth:argon2_verify", "duration_ms": 8240, "status": "THROTTLED"},
-                {"name": "auth:db_pool_acquisition", "duration_ms": 14, "status": "OK"},
-            ],
+            "packet_loss_pct": 31.4,
+            "avg_latency_ms": 3200,
+            "target": "8.8.8.8",
+            "route_convergence_sec": 48.2,
         },
-        "correlation_id": "trace-argon2-thrash-0915",
-        "related_service": "auth-service",
-        "source_metadata": {"collector": "opentelemetry-collector", "sampler": "100%"},
+        "correlation_id": "wan-probe-loss-0913",
+        "related_service": "portal-gateway",
+        "source_metadata": {"collector": "blackbox-exporter", "target": "gw-border-01"},
     },
     {
         "id": uuid.UUID("c3333333-0000-0000-0000-000000000005"),
         "evidence_type": EvidenceType.USER_REPORT,
         "source_type": "alert",
         "service_name": "portal-gateway",
-        "event_time": datetime(2026, 10, 31, 9, 17, 0, tzinfo=timezone.utc),
+        "event_time": datetime(2026, 10, 31, 9, 15, 0, tzinfo=timezone.utc),
         "severity": "critical",
-        "title": "AlertManager P1: Upstream Gateway 504 Rate Exceeds 40%",
+        "title": "AlertManager P1: WAN_CONNECTIVITY_DEGRADED & Ingress 504 Timeout Spike",
         "content": (
-            "Alert 'PortalGatewayHigh504Rate' firing: HTTP 504 Gateway Timeouts on POST /api/auth/login "
-            "reached 41.2% over 5m sliding window. Upstream service auth-service unresponsive."
+            "P1 Network Incident: Outbound academic SaaS, external student auth callbacks, and internet "
+            "connectivity degraded campus-wide due to concurrent BGP flap and firewall policy drop."
         ),
         "details": {
-            "alert": "PortalGatewayHigh504Rate",
-            "error_rate_pct": 41.2,
-            "evaluated_window": "5m",
-            "pagerduty_incident": "PD-99214",
+            "alert": "P1_WAN_CONNECTIVITY_DEGRADED",
+            "gateway_504_pct": 38.6,
+            "pagerduty_incident": "PD-NET-88219",
         },
-        "correlation_id": "alert-gateway-504-0917",
-        "related_service": "auth-service",
-        "source_metadata": {"collector": "alertmanager", "receiver": "pagerduty-sre"},
+        "correlation_id": "alert-wan-degraded-0915",
+        "related_service": "gw-border-01",
+        "source_metadata": {"collector": "alertmanager", "receiver": "pagerduty-netops"},
     },
 ]
 
@@ -561,7 +677,43 @@ async def seed_demo_incident(
     target_incident = None
 
     # Upsert only the requested scenario so canonical tests expecting single-incident remain 100% passing
-    if target_id == SCENARIO_1_ID:
+    if target_id == NET_SCENARIO_1_ID:
+        stmt_mtu = select(Incident).where(Incident.id == NET_SCENARIO_1_ID)
+        res_mtu = await db.execute(stmt_mtu)
+        inc_mtu = res_mtu.scalars().first()
+        if not inc_mtu:
+            inc_mtu = Incident(
+                id=NET_SCENARIO_1_ID,
+                title="Campus Core Switch Trunk MTU Mismatch & 802.1Q Frame Drops",
+                description=(
+                    "[SIMULATED INCIDENT DATA] High-volume 504 Gateway Timeouts impacting student portal login "
+                    "during peak course registration window. Inter-building 802.1Q trunk interface Te1/0/1 on switch-core-bldg-a "
+                    "was accidentally configured with standard MTU 1500 bytes while peer interface Eth1/1 uses MTU 9216 Jumbo frames, "
+                    "causing 100% packet loss on payloads exceeding 1472 bytes."
+                ),
+                status=IncidentStatus.INVESTIGATING,
+                priority=IncidentPriority.CRITICAL,
+                category=IncidentCategory.NETWORK,
+                reported_by=current_user_id,
+                ai_classification={
+                    "incident_type": "core_switch_mtu_mismatch",
+                    "affected_layer": "campus_network_backbone",
+                    "confidence": 0.98,
+                    "simulated": True,
+                },
+            )
+            db.add(inc_mtu)
+        else:
+            inc_mtu.title = "Campus Core Switch Trunk MTU Mismatch & 802.1Q Frame Drops"
+            inc_mtu.status = IncidentStatus.INVESTIGATING
+            inc_mtu.priority = IncidentPriority.CRITICAL
+            inc_mtu.category = IncidentCategory.NETWORK
+            inc_mtu.ai_root_cause = None
+            inc_mtu.ai_resolution = None
+            inc_mtu.resolved_at = None
+        target_incident = inc_mtu
+
+    elif target_id == SCENARIO_1_ID:
         stmt1 = select(Incident).where(Incident.id == SCENARIO_1_ID)
         res1 = await db.execute(stmt1)
         inc1 = res1.scalars().first()
@@ -611,12 +763,12 @@ async def seed_demo_incident(
                 ),
                 status=IncidentStatus.INVESTIGATING,
                 priority=IncidentPriority.HIGH,
-                category=IncidentCategory.HARDWARE,
+                category=IncidentCategory.NETWORK,
                 reported_by=current_user_id,
                 ai_classification={
                     "incident_type": "wifi_dhcp_exhaustion",
                     "affected_layer": "campus_network_hardware",
-                    "confidence": 0.94,
+                    "confidence": 0.98,
                     "simulated": True,
                 },
             )
@@ -625,7 +777,7 @@ async def seed_demo_incident(
             inc2.title = "Campus Wi-Fi Ingress Degradation & DHCP Scope Exhaustion (Library Zone)"
             inc2.status = IncidentStatus.INVESTIGATING
             inc2.priority = IncidentPriority.HIGH
-            inc2.category = IncidentCategory.HARDWARE
+            inc2.category = IncidentCategory.NETWORK
             inc2.ai_root_cause = None
             inc2.ai_resolution = None
             inc2.resolved_at = None
@@ -638,29 +790,34 @@ async def seed_demo_incident(
         if not inc3:
             inc3 = Incident(
                 id=SCENARIO_3_ID,
-                title="Auth-Service CPU Starvation via Argon2id Memory Thrashing in Canary v2.4.1",
+                title="Border Gateway BGP Route Flapping & Edge Firewall Policy Drift",
                 description=(
-                    "[SIMULATED INCIDENT DATA] Critical response latency surge across campus portal authentication flow. "
-                    "Canary deployment v2.4.1 increased Argon2id memory cost parameter to 64MB per verification, driving "
-                    "auth-service pod CPU utilization to 98.4% with 42.1% CFS throttling under concurrent login load."
+                    "[SIMULATED INCIDENT DATA] Critical outbound connectivity failure across campus network. "
+                    "Primary upstream ISP BGP neighbor 198.51.100.1 flapped 14 times due to hold-timer expiry, "
+                    "and Edge Firewall rule #118 shadowed outbound academic transit, dropping 4,280 sessions/minute."
                 ),
                 status=IncidentStatus.INVESTIGATING,
                 priority=IncidentPriority.CRITICAL,
-                category=IncidentCategory.SOFTWARE,
+                category=IncidentCategory.NETWORK,
                 reported_by=current_user_id,
                 ai_classification={
-                    "incident_type": "canary_cpu_thrashing",
-                    "affected_layer": "crypto_microservice",
-                    "confidence": 0.97,
+                    "incident_type": "bgp_routing_firewall_drift",
+                    "affected_layer": "border_wan_network",
+                    "confidence": 0.98,
                     "simulated": True,
                 },
             )
             db.add(inc3)
         else:
-            inc3.title = "Auth-Service CPU Starvation via Argon2id Memory Thrashing in Canary v2.4.1"
+            inc3.title = "Border Gateway BGP Route Flapping & Edge Firewall Policy Drift"
+            inc3.description = (
+                "[SIMULATED INCIDENT DATA] Critical outbound connectivity failure across campus network. "
+                "Primary upstream ISP BGP neighbor 198.51.100.1 flapped 14 times due to hold-timer expiry, "
+                "and Edge Firewall rule #118 shadowed outbound academic transit, dropping 4,280 sessions/minute."
+            )
             inc3.status = IncidentStatus.INVESTIGATING
             inc3.priority = IncidentPriority.CRITICAL
-            inc3.category = IncidentCategory.SOFTWARE
+            inc3.category = IncidentCategory.NETWORK
             inc3.ai_root_cause = None
             inc3.ai_resolution = None
             inc3.resolved_at = None
@@ -670,11 +827,14 @@ async def seed_demo_incident(
 
     # 2. Upsert Evidence items for the target scenario
     now_utc = datetime.now(timezone.utc)
-    ev_defs = (
-        SCENARIO_2_EVIDENCE_DEFINITIONS
-        if target_id == SCENARIO_2_ID
-        else (SCENARIO_3_EVIDENCE_DEFINITIONS if target_id == SCENARIO_3_ID else DEMO_EVIDENCE_DEFINITIONS)
-    )
+    if target_id == NET_SCENARIO_1_ID:
+        ev_defs = SCENARIO_MTU_EVIDENCE_DEFINITIONS
+    elif target_id == SCENARIO_2_ID:
+        ev_defs = SCENARIO_2_EVIDENCE_DEFINITIONS
+    elif target_id == SCENARIO_3_ID:
+        ev_defs = SCENARIO_3_EVIDENCE_DEFINITIONS
+    else:
+        ev_defs = DEMO_EVIDENCE_DEFINITIONS
 
     for item in ev_defs:
         ev_id = item["id"]
@@ -883,7 +1043,7 @@ async def list_incidents(db: AsyncSession, limit: int = 50) -> list[IncidentSumm
 
     summaries = []
     for inc, ev_count in rows:
-        aff_count = 5 if inc.id == SCENARIO_1_ID else (3 if inc.id in (SCENARIO_2_ID, SCENARIO_3_ID) else 1)
+        aff_count = 5 if inc.id == SCENARIO_1_ID else (4 if inc.id in (NET_SCENARIO_1_ID, SCENARIO_3_ID) else (3 if inc.id == SCENARIO_2_ID else 1))
         summaries.append(
             IncidentSummary(
                 id=inc.id,
@@ -913,7 +1073,7 @@ async def get_incident_summary(db: AsyncSession, incident_id: uuid.UUID) -> Inci
     ev_count_res = await db.execute(ev_count_stmt)
     ev_count = ev_count_res.scalar_one()
 
-    aff_count = 5 if inc.id == SCENARIO_1_ID else (3 if inc.id in (SCENARIO_2_ID, SCENARIO_3_ID) else 1)
+    aff_count = 5 if inc.id == SCENARIO_1_ID else (4 if inc.id in (NET_SCENARIO_1_ID, SCENARIO_3_ID) else (3 if inc.id == SCENARIO_2_ID else 1))
     return IncidentSummary(
         id=inc.id,
         title=inc.title,
@@ -1003,7 +1163,110 @@ async def get_service_dependency_graph(
         service_evidence_map.setdefault(ev.service_name, []).append(ev.evidence_id)
 
     # Define standard topology with impact based on mapped evidence
-    if incident_id == SCENARIO_2_ID:
+    if incident_id == NET_SCENARIO_1_ID:
+        nodes = [
+            ServiceNode(
+                id="student-portal-ui",
+                name="Student Portal UI (Next.js)",
+                service_type="frontend",
+                status="degraded",
+                impact="high",
+                metrics_summary={
+                    "failure_rate": "84.2%",
+                    "p99_latency": "14.2s",
+                    "client_504_errors": 354,
+                },
+                supporting_evidence_ids=service_evidence_map.get("student-portal-ui", []),
+            ),
+            ServiceNode(
+                id="portal-gateway",
+                name="API Portal Gateway (Envoy/Nginx)",
+                service_type="gateway",
+                status="critical",
+                impact="high",
+                metrics_summary={
+                    "http_504_rate": "34.2%",
+                    "p99_latency": "14.2s",
+                    "tls_handshake_drops": 128,
+                },
+                supporting_evidence_ids=service_evidence_map.get("portal-gateway", []),
+            ),
+            ServiceNode(
+                id="switch-core-bldg-a",
+                name="Core Backbone Switch (switch-core-bldg-a)",
+                service_type="switch",
+                status="critical",
+                impact="root_suspect",
+                metrics_summary={
+                    "interface": "Te1/0/1",
+                    "configured_mtu": "1500 (MISMATCH)",
+                    "packet_discards_sec": 380,
+                    "jumbo_status": "DISABLED",
+                },
+                supporting_evidence_ids=service_evidence_map.get("switch-core-bldg-a", []),
+            ),
+            ServiceNode(
+                id="switch-dist-bldg-b",
+                name="Distribution Switch (switch-dist-bldg-b)",
+                service_type="switch",
+                status="warning",
+                impact="root_suspect",
+                metrics_summary={
+                    "interface": "Eth1/1",
+                    "configured_mtu": "9216 (Jumbo)",
+                    "vlan": "100 (Core Trunk)",
+                    "health": "operational",
+                },
+                supporting_evidence_ids=service_evidence_map.get("switch-dist-bldg-b", []),
+            ),
+            ServiceNode(
+                id="campus-ldap-idp",
+                name="Campus Identity Provider (LDAP / SSO)",
+                service_type="idp",
+                status="healthy",
+                impact="none",
+                metrics_summary={
+                    "health": "operational",
+                    "p95_latency": "18ms",
+                    "error_rate": "0.0%",
+                },
+                supporting_evidence_ids=service_evidence_map.get("campus-ldap-idp", []),
+            ),
+        ]
+        edges = [
+            ServiceEdge(
+                source="student-portal-ui",
+                target="switch-core-bldg-a",
+                relationship="connects_access",
+                protocol="10GBASE-T",
+                is_degraded=False,
+            ),
+            ServiceEdge(
+                source="switch-core-bldg-a",
+                target="switch-dist-bldg-b",
+                relationship="inter_switch_trunk",
+                protocol="802.1Q/VLAN100 (MTU Mismatch)",
+                is_degraded=True,
+            ),
+            ServiceEdge(
+                source="switch-dist-bldg-b",
+                target="portal-gateway",
+                relationship="routes_gateway",
+                protocol="10GBASE-T",
+                is_degraded=True,
+            ),
+            ServiceEdge(
+                source="portal-gateway",
+                target="campus-ldap-idp",
+                relationship="authenticates_request",
+                protocol="LDAPS/TCP",
+                is_degraded=False,
+            ),
+        ]
+        root_suspects = ["switch-core-bldg-a", "switch-dist-bldg-b"]
+        affected_services = ["student-portal-ui", "portal-gateway", "switch-core-bldg-a", "switch-dist-bldg-b"]
+
+    elif incident_id == SCENARIO_2_ID:
         nodes = [
             ServiceNode(
                 id="student-portal-ui",
@@ -1093,9 +1356,9 @@ async def get_service_dependency_graph(
                 status="degraded",
                 impact="high",
                 metrics_summary={
-                    "failure_rate": "41.2%",
-                    "p99_latency": "10.1s",
-                    "client_504_errors": 184,
+                    "failure_rate": "38.6%",
+                    "wan_packet_loss": "31.4%",
+                    "p99_latency": "12.8s",
                 },
                 supporting_evidence_ids=service_evidence_map.get("student-portal-ui", []),
             ),
@@ -1106,85 +1369,86 @@ async def get_service_dependency_graph(
                 status="critical",
                 impact="high",
                 metrics_summary={
-                    "http_504_rate": "41.2%",
-                    "p99_latency": "10.1s",
-                    "upstream_timeouts": 142,
+                    "http_504_rate": "38.6%",
+                    "upstream_timeouts": 164,
+                    "wan_dns_latency": "3,200ms",
                 },
                 supporting_evidence_ids=service_evidence_map.get("portal-gateway", []),
             ),
             ServiceNode(
-                id="auth-service",
-                name="Authentication Microservice (FastAPI)",
-                service_type="microservice",
+                id="firewall-edge-01",
+                name="Edge Perimeter Firewall (PA-3220)",
+                service_type="firewall",
                 status="critical",
                 impact="root_suspect",
                 metrics_summary={
-                    "cpu_utilization": "98.4%",
-                    "cfs_throttled": "42.1%",
-                    "argon2_cost": "64MB (65536 KB)",
-                    "version": "canary-v2.4.1",
+                    "dropped_sessions_min": 4280,
+                    "shadowed_rule": "#124 (PERMIT-ACADEMIC)",
+                    "shadowing_rule": "#118 (BLOCK-UNREGISTERED)",
+                    "status": "POLICY_DRIFT",
                 },
-                supporting_evidence_ids=service_evidence_map.get("auth-service", []),
+                supporting_evidence_ids=service_evidence_map.get("firewall-edge-01", []),
             ),
             ServiceNode(
-                id="campusops-db",
-                name="PostgreSQL Core Database (pgvector)",
-                service_type="database",
+                id="gw-border-01",
+                name="Campus Border Gateway (Cisco ISR 4451)",
+                service_type="router",
+                status="critical",
+                impact="root_suspect",
+                metrics_summary={
+                    "bgp_peer": "198.51.100.1 (AS1299)",
+                    "peer_flaps": "14 in 25 min",
+                    "hold_timer": "EXPIRED",
+                    "convergence_latency": "48.2s",
+                },
+                supporting_evidence_ids=service_evidence_map.get("gw-border-01", []),
+            ),
+            ServiceNode(
+                id="switch-core-bldg-a",
+                name="Core Backbone Switch (switch-core-bldg-a)",
+                service_type="switch",
                 status="healthy",
                 impact="none",
                 metrics_summary={
-                    "active_connections": "4/100 (4%)",
-                    "idle_in_transaction": 0,
-                    "blocking_queries": 0,
-                },
-                supporting_evidence_ids=service_evidence_map.get("campusops-db", []),
-            ),
-            ServiceNode(
-                id="campus-ldap-idp",
-                name="Campus Identity Provider (LDAP / SSO)",
-                service_type="idp",
-                status="healthy",
-                impact="none",
-                metrics_summary={
+                    "link_state": "10G Full-Duplex",
+                    "crc_errors": 0,
                     "health": "operational",
-                    "p95_latency": "16ms",
-                    "error_rate": "0.0%",
                 },
-                supporting_evidence_ids=service_evidence_map.get("campus-ldap-idp", []),
+                supporting_evidence_ids=service_evidence_map.get("switch-core-bldg-a", []),
             ),
         ]
         edges = [
             ServiceEdge(
                 source="student-portal-ui",
+                target="switch-core-bldg-a",
+                relationship="connects_access",
+                protocol="10GBASE-T",
+                is_degraded=False,
+            ),
+            ServiceEdge(
+                source="switch-core-bldg-a",
                 target="portal-gateway",
-                relationship="routes_traffic",
+                relationship="routes_gateway",
                 protocol="HTTPS/REST",
-                is_degraded=True,
+                is_degraded=False,
             ),
             ServiceEdge(
                 source="portal-gateway",
-                target="auth-service",
-                relationship="authenticates_request",
-                protocol="HTTP/JSON",
+                target="firewall-edge-01",
+                relationship="egress_traffic",
+                protocol="TCP/443 (Firewall Drop)",
                 is_degraded=True,
             ),
             ServiceEdge(
-                source="auth-service",
-                target="campusops-db",
-                relationship="queries_user_session",
-                protocol="PostgreSQL/TCP",
-                is_degraded=False,
-            ),
-            ServiceEdge(
-                source="auth-service",
-                target="campus-ldap-idp",
-                relationship="validates_directory_credentials",
-                protocol="LDAPS/TCP",
-                is_degraded=False,
+                source="firewall-edge-01",
+                target="gw-border-01",
+                relationship="upstream_transit",
+                protocol="BGP/IP (Route Flap)",
+                is_degraded=True,
             ),
         ]
-        root_suspects = ["auth-service"]
-        affected_services = ["student-portal-ui", "portal-gateway", "auth-service"]
+        root_suspects = ["firewall-edge-01", "gw-border-01"]
+        affected_services = ["student-portal-ui", "portal-gateway", "firewall-edge-01", "gw-border-01"]
 
     else:
         nodes = [

@@ -88,7 +88,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
               <div>
                 <span className="text-xs font-semibold text-white block">Zero-Trust RBAC</span>
                 <span className="text-[10px] text-[#84999a] leading-tight block">
-                  HttpOnly session cookies with Argon2id protection.
+                  HttpOnly session cookies with role-based authorization.
                 </span>
               </div>
             </div>

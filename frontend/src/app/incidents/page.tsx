@@ -47,28 +47,28 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-const DEMO_INCIDENT_ID = "11111111-2222-3333-4444-555555555555";
+const DEMO_INCIDENT_ID = "44444444-2222-3333-4444-555555555555";
 
 export const DEMO_SCENARIOS = [
   {
-    id: "11111111-2222-3333-4444-555555555555",
-    label: "Scenario 1: DB Pool Starvation",
-    shortLabel: "Scenario 1 (DB Pool)",
-    badge: "SOFTWARE",
-    badgeColor: "bg-blue-950 text-blue-300 border-blue-800",
+    id: "44444444-2222-3333-4444-555555555555",
+    label: "Scenario 1: Campus Core Switch Trunk MTU Mismatch & Frame Drops",
+    shortLabel: "Scenario 1 (Core Switch MTU)",
+    badge: "CORE SWITCHING",
+    badgeColor: "bg-cyan-950 text-cyan-300 border-cyan-800",
   },
   {
     id: "22222222-2222-3333-4444-555555555555",
-    label: "Scenario 2: Campus Wi-Fi & DHCP Exhaustion",
+    label: "Scenario 2: Campus Wi-Fi Degradation & DHCP Scope Exhaustion",
     shortLabel: "Scenario 2 (Wi-Fi / DHCP)",
-    badge: "HARDWARE",
+    badge: "WIRELESS & DHCP",
     badgeColor: "bg-rose-950 text-rose-300 border-rose-800",
   },
   {
     id: "33333333-2222-3333-4444-555555555555",
-    label: "Scenario 3: Canary Argon2 CPU Thrashing",
-    shortLabel: "Scenario 3 (Canary CPU)",
-    badge: "CANARY",
+    label: "Scenario 3: Border Gateway BGP Flapping & Edge Firewall Drift",
+    shortLabel: "Scenario 3 (WAN BGP / Firewall)",
+    badge: "WAN & FIREWALL",
     badgeColor: "bg-amber-950 text-amber-300 border-amber-800",
   },
 ];
@@ -653,7 +653,7 @@ function IncidentsWorkspaceContent() {
                   ))
                 ) : (
                   <option value={DEMO_INCIDENT_ID} className="bg-[#0d1527] text-slate-200">
-                    INC-2026-001 • Portal 504 Gateway Outage
+                    INC-2026-001 • Core Switch Trunk MTU Mismatch
                   </option>
                 )}
               </select>

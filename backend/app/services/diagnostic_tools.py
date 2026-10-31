@@ -12,6 +12,7 @@ import uuid
 from app.schemas.investigation import DiagnosticToolCall
 
 SCENARIO_1_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
+NET_SCENARIO_1_ID = uuid.UUID("44444444-2222-3333-4444-555555555555")
 SCENARIO_2_ID = uuid.UUID("22222222-2222-3333-4444-555555555555")
 SCENARIO_3_ID = uuid.UUID("33333333-2222-3333-4444-555555555555")
 
@@ -22,7 +23,80 @@ def run_network_connectivity_diagnostic(
     incident_id: uuid.UUID | None = None,
 ) -> DiagnosticToolCall:
     """Primary Network Diagnostic: checks L3/L4 connectivity, DNS, DHCP, gateway, and switch health."""
-    if incident_id == SCENARIO_2_ID:
+    if incident_id == NET_SCENARIO_1_ID:
+        simulated_output = {
+            "target": "switch-core-bldg-a:Te1/0/1",
+            "mtu_sweep_probe": {
+                "ping_64b": {"packet_loss_pct": 0.0, "latency_ms": 0.4, "status": "PASS"},
+                "ping_1472b": {"packet_loss_pct": 0.0, "latency_ms": 0.6, "status": "PASS"},
+                "ping_1500b_df_set": {"packet_loss_pct": 100.0, "latency_ms": None, "status": "FAIL_DF_OVERSIZE"},
+                "ping_9000b_jumbo": {"packet_loss_pct": 100.0, "latency_ms": None, "status": "FAIL_DF_OVERSIZE"},
+            },
+            "interface_mtu_audit": {
+                "local_switch": "switch-core-bldg-a",
+                "local_interface": "TenGigabitEthernet1/0/1",
+                "local_mtu": 1500,
+                "remote_switch": "switch-dist-bldg-b",
+                "remote_interface": "Ethernet1/1",
+                "remote_mtu": 9216,
+                "mtu_status": "MISMATCH_DETECTED",
+            },
+            "trunk_discards": {
+                "vlan": 100,
+                "discard_rate_sec": 380,
+                "cumulative_discards": 18420,
+                "crc_errors": 0,
+                "physical_carrier": "UP_10G_FULL_DUPLEX",
+            },
+            "gateway_reachability": {
+                "small_payloads": "PASS (< 2ms)",
+                "tls_client_cert_payloads": "FAIL_TIMEOUT (> 15000ms)",
+                "http_504_rate_pct": 34.2,
+            },
+            "simulated": True,
+        }
+        insight = (
+            "CRITICAL NETWORK MTU MISMATCH DETECTED: Core switch interface Te1/0/1 is configured for standard MTU 1500 "
+            "while peer switch-dist-bldg-b:Eth1/1 uses MTU 9216 Jumbo frames. Frames exceeding 1472 bytes are dropped by "
+            "hardware packet policer, causing 100% loss on TLS client certs and cascading HTTP 504 timeouts."
+        )
+
+    elif incident_id == SCENARIO_3_ID:
+        simulated_output = {
+            "target": "gw-border-01 & firewall-edge-01",
+            "bgp_peering_status": {
+                "primary_peer": "198.51.100.1 (AS1299-Telia-Primary)",
+                "primary_state": "ACTIVE / FLAPPING",
+                "flaps_last_30m": 14,
+                "hold_timer_seconds": 90,
+                "last_error": "Hold Timer Expired (BGP Notification 4/0)",
+                "secondary_peer": "203.0.113.2 (AS2914-NTT-Secondary)",
+                "secondary_state": "ESTABLISHED",
+                "secondary_weight": 0,
+            },
+            "edge_firewall_audit": {
+                "firewall": "firewall-edge-01 (PA-3220)",
+                "shadowing_rule": "SEC-POLICY-BLOCK-UNREGISTERED (#118)",
+                "shadowed_rule": "PERMIT-ACADEMIC-EGRESS (#124)",
+                "dropped_sessions_min": 4280,
+                "action": "DROP_SECURITY_POLICY_DENY",
+                "drift_timestamp": "09:02:00 UTC",
+            },
+            "wan_egress_probe": {
+                "packet_loss_pct": 31.4,
+                "dns_8888_latency_ms": 3200,
+                "route_convergence_sec": 48.2,
+                "status": "CRITICAL_DEGRADATION",
+            },
+            "simulated": True,
+        }
+        insight = (
+            "CRITICAL BGP FLAPPING & EDGE FIREWALL POLICY SHADOWING DETECTED: Primary BGP peer 198.51.100.1 flapped "
+            "14 times in 25 min due to hold-timer expiry, and Edge Firewall rule #118 is shadowing outbound academic transit, "
+            "dropping 4,280 sessions/minute."
+        )
+
+    elif incident_id == SCENARIO_2_ID:
         simulated_output = {
             "target": "ap-lib-floor2",
             "icmp_ping": {

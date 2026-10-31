@@ -66,9 +66,10 @@ export default function LifecycleWorkflowDiagram({
   const hasDiag2 = investigation.tool_history.some((t) =>
     ["database", "deployment_config"].includes(t.category)
   );
-  const leadingConf =
-    investigation.hypotheses.find((h) => h.id === investigation.leading_hypothesis_id)
-      ?.confidence_score || 0.78;
+  const leadingHypothesis = investigation.hypotheses.find(
+    (h) => h.id === investigation.leading_hypothesis_id
+  );
+  const leadingConf = leadingHypothesis?.confidence_score || 0.78;
 
   // 15 primary lifecycle sequence nodes
   const nodes: WorkflowNode[] = [
@@ -136,11 +137,11 @@ export default function LifecycleWorkflowDiagram({
     {
       id: "hypothesis_generation",
       label: "7. Hypotheses",
-      sublabel: "3 Competing Models",
+      sublabel: `${investigation.hypotheses.length || 3} Competing Models`,
       category: "orchestrator",
       stageNum: 7,
       status: "COMPLETED",
-      description: "Generated 3 failure hypotheses: Network Backbone, DB Connection Pool, and Canary Argon2id.",
+      description: `Generated ${investigation.hypotheses.length || 3} competing failure hypotheses across network infrastructure and service dependencies.`,
       outcome: `Leading candidate: ${investigation.leading_hypothesis_id} (${Math.round(leadingConf * 100)}% conf).`,
     },
     {
@@ -150,21 +151,21 @@ export default function LifecycleWorkflowDiagram({
       category: "orchestrator",
       stageNum: 8,
       status: hasDiag1 ? "COMPLETED" : "IN_PROGRESS",
-      description: "Selected network_connectivity_diagnostic to inspect physical switches and gateway.",
+      description: "Selected network_connectivity_diagnostic to inspect physical switches and topology paths.",
       outcome: hasDiag1
-        ? "Network L3/L4 switches, DNS, and gateway ICMP verified 100% operational."
+        ? (investigation.tool_history[0]?.interpreted_insight || "Network connectivity diagnostics executed and telemetry correlated.")
         : "Awaiting diagnostic execution.",
     },
     {
       id: "evidence_evaluation",
       label: "9. Diagnostics Run",
-      sublabel: "DB Diagnostics",
+      sublabel: "Telemetry Probes",
       category: "orchestrator",
       stageNum: 9,
-      status: hasDiag2 ? "COMPLETED" : hasDiag1 ? "IN_PROGRESS" : "PENDING",
-      description: "Executed database diagnostics inspecting connection pool starvation.",
-      outcome: hasDiag2
-        ? "Confirmed: DB pool utilization 15/15 (100% saturation, QueuePool timeout)."
+      status: hasDiag2 || hasDiag1 ? "COMPLETED" : "PENDING",
+      description: "Executed targeted diagnostic probes and correlated telemetry with leading hypothesis.",
+      outcome: hasDiag2 || hasDiag1
+        ? (investigation.tool_history[investigation.tool_history.length - 1]?.interpreted_insight || "Telemetry signals confirmed root-cause hypothesis.")
         : "Pending secondary diagnostic.",
     },
     {
@@ -179,17 +180,19 @@ export default function LifecycleWorkflowDiagram({
         investigation.current_stage !== "HYPOTHESIS_GENERATION"
           ? "COMPLETED"
           : "PENDING",
-      description: "Formulated root cause decision with 94% Bayesian confidence.",
-      outcome: `Confirmed: ${investigation.leading_hypothesis_id} (ConfigMap reduced pool to 15).`,
+      description: `Formulated root cause decision with ${Math.round(leadingConf * 100)}% confidence.`,
+      outcome: `Confirmed: ${investigation.leading_hypothesis_id} - ${leadingHypothesis?.title || "Root Cause Isolated"}`,
     },
     {
       id: "recovery_recommendation",
       label: "11. Recovery Plan",
-      sublabel: "Scale Pool to 50",
+      sublabel: investigation.recovery_plan?.action_id || "Remediation",
       category: "decision",
       stageNum: 11,
       status: investigation.recovery_plan ? "COMPLETED" : "PENDING",
-      description: "Formulated remediation plan ACTION-DB-POOL-SCALE-50 with rollback procedure.",
+      description: investigation.recovery_plan
+        ? `Formulated remediation plan ${investigation.recovery_plan.action_id} with rollback procedure.`
+        : "Awaiting plan formulation.",
       outcome: investigation.recovery_plan
         ? `${investigation.recovery_plan.action_id}: ${investigation.recovery_plan.action_name}`
         : "Awaiting plan formulation.",
@@ -221,7 +224,7 @@ export default function LifecycleWorkflowDiagram({
     {
       id: "execute_recovery",
       label: "13. Recovery Action",
-      sublabel: "Simulated Execution",
+      sublabel: "Remediation",
       category: "remediation",
       stageNum: 13,
       status:
@@ -230,9 +233,9 @@ export default function LifecycleWorkflowDiagram({
           : isReadyToExecute
           ? "IN_PROGRESS"
           : "PENDING",
-      description: "Execute simulated GitOps commit revert, connection drain, and rolling pod restart.",
+      description: "Execute authorized remediation action and verify system health telemetry.",
       outcome: isPostRecovery
-        ? "Recovery executed: pool size restored to 50, idle handles released."
+        ? (investigation.verification_result?.outcome_summary || "Remediation executed and telemetry baseline restored.")
         : "Ready for execution.",
     },
     {

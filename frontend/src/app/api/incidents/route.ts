@@ -67,9 +67,11 @@ export async function POST(req: Request) {
       // ignore parsing failure, fallback to default scenario
     }
 
-    const endpoint = scenarioId
-      ? `${BACKEND_URL}/api/v1/incidents/seed-demo?scenario_id=${encodeURIComponent(scenarioId)}`
-      : `${BACKEND_URL}/api/v1/incidents/seed-demo`;
+    if (!scenarioId) {
+      scenarioId = "44444444-2222-3333-4444-555555555555";
+    }
+
+    const endpoint = `${BACKEND_URL}/api/v1/incidents/seed-demo?scenario_id=${encodeURIComponent(scenarioId)}`;
 
     const response = await fetch(endpoint, {
       method: "POST",
