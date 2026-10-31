@@ -1,0 +1,22 @@
+services:
+  campusops-db:
+    image: ankane/pgvector:v0.5.1
+    container_name: campusops-db
+    restart: unless-stopped
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-campusops_db}
+      POSTGRES_USER: ${POSTGRES_USER:-campusops_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-campusops_secret_2026}
+    volumes:
+      - campusops_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-campusops_admin} -d ${POSTGRES_DB:-campusops_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  campusops_pgdata:
+    name: campusops_pgdata
